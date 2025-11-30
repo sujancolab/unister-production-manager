@@ -11,7 +11,13 @@
             </ion-header>
 
             <div class="production-container">
-                <h1>Production Process</h1>
+                <div class="page-header">
+                    <ion-button fill="clear" color="medium" @click="goToDashboard" class="back-button">
+                        <ion-icon slot="start" :icon="arrowBack"></ion-icon>
+                        Back to Dashboard
+                    </ion-button>
+                    <h1>Production Process</h1>
+                </div>
 
                 <!-- Selection Form -->
                 <ion-card>
@@ -106,6 +112,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import {
     IonPage,
     IonContent,
@@ -123,8 +130,10 @@ import {
     IonButton,
     IonHeader,
     IonToolbar,
-    IonTitle
+    IonTitle,
+    IonIcon
 } from '@ionic/vue';
+import { arrowBack } from 'ionicons/icons';
 import Header from '../components/Header.vue';
 import Sidebar from '../components/Sidebar.vue';
 import StageItem from '../components/StageItem.vue';
@@ -132,6 +141,7 @@ import { useAppStore } from '../store';
 import api from '@/services/api';
 
 const store = useAppStore();
+const router = useRouter();
 
 const clients = ref([]);
 const projects = ref(['Project Alpha', 'Project Beta', 'Project Gamma']);
@@ -149,10 +159,9 @@ const selectedMarkNo = ref('');
 // Fetch Clients from API
 const loadClients = async () => {
     try {
-        const res = await api.get('/getClients'); // Change your API URL
-        clients.value = res.data.clients; // Ensure your API returns data.data
+        const res = await api.get('/getClients');
+        clients.value = res.data.clients;
         console.log("clients.value", clients.value);
-
     } catch (error) {
         console.error("Error loading clients:", error);
     }
@@ -167,51 +176,60 @@ const loadProjects = async (clientId) => {
         console.error("Error loading projects:", error);
     }
 };
+
 const loadBoms = async (projectId) => {
     try {
         const res = await api.get(`/getBoms?project_id=${projectId}`);
         boms.value = [res.data];
         console.log("boms", boms.value);
-
     } catch (error) {
         console.error("Error loading boms:", error);
     }
 };
+
 const loadPlannings = async (bom_id) => {
     try {
         const res = await api.get(`/getPlanning?bom_id=${bom_id}`);
         plannings.value = res.data;
         console.log("planning", plannings.value);
-
     } catch (error) {
         console.error("Error loading planning:", error);
     }
 };
+
 const loadMarknos = async (planning_id) => {
     try {
         const res = await api.get(`/getPlanningMarkNos?planning_id=${planning_id}`);
         planningMarkNos.value = res.data;
         console.log("planning", plannings.value);
-
     } catch (error) {
         console.error("Error loading planning:", error);
     }
 }
+
 const loadStages = async () => {
     try {
         const res = await api.get(`/getStages?planning_id=${selectedPlanning.value}&mark_no=${selectedMarkNo.value}`);
         stages.value = res.data;
+        
+        // Map stages with completed and rejected status
         stages.value = stages.value.map(el => ({
             ...el,
-            completed: el.stage_completed_date !== null
+            completed: el.stage_completed_date !== null,
+            rejected: el.stage_rejected_date !== null,
+            status: el.stage_rejected_date !== null 
+                ? 'rejected' 
+                : el.stage_completed_date !== null 
+                ? 'completed' 
+                : 'pending'
         }));
 
         console.log("stages", stages.value);
-
     } catch (error) {
-        console.error("Error loading planning:", error);
+        console.error("Error loading stages:", error);
     }
 }
+
 const saveStages = async () => {
     try {
         const payload = {
@@ -224,7 +242,6 @@ const saveStages = async () => {
 
         console.log("Save response:", res.data);
         alert("Stages saved successfully!");
-
     } catch (error) {
         console.error("Error saving stages:", error);
         alert("Something went wrong while saving!");
@@ -234,32 +251,36 @@ const saveStages = async () => {
 // Watch client selection → Load projects
 watch(selectedClient, (newVal) => {
     if (newVal) {
-        selectedProject.value = "";   // reset project
-        projects.value = [];          // clear existing
+        selectedProject.value = "";
+        projects.value = [];
         loadProjects(newVal);
     }
 });
+
 watch(selectedProject, (newVal) => {
     if (newVal) {
-        selectedBOM.value = "";   // reset project
-        boms.value = [];          // clear existing
+        selectedBOM.value = "";
+        boms.value = [];
         loadBoms(newVal);
     }
 });
+
 watch(selectedBOM, (newVal) => {
     if (newVal) {
-        selectedPlanning.value = "";   // reset project
-        plannings.value = [];          // clear existing
+        selectedPlanning.value = "";
+        plannings.value = [];
         loadPlannings(newVal);
     }
 });
+
 watch(selectedPlanning, (newVal) => {
     if (newVal) {
-        selectedMarkNo.value = "";   // reset project
-        planningMarkNos.value = [];          // clear existing
+        selectedMarkNo.value = "";
+        planningMarkNos.value = [];
         loadMarknos(newVal);
     }
 });
+
 const allSelectionsComplete = computed(() => {
     return selectedClient.value &&
         selectedProject.value &&
@@ -277,14 +298,20 @@ const handleMarkSelection = () => {
             selectedPlanning.value
         );
         loadStages()
-        // store.loadStages();
     }
 };
+
 const updateStage = (updatedStage) => {
     stages.value = stages.value.map(s =>
         s.id === updatedStage.id ? updatedStage : s
     );
 };
+
+// Navigate back to dashboard
+const goToDashboard = () => {
+    router.push('/dashboard'); // Change '/dashboard' to your actual dashboard route
+};
+
 // Load Clients on Page Load
 onMounted(() => {
     loadClients();
@@ -310,6 +337,20 @@ h1 {
     margin-top: 0;
 }
 
+.page-header {
+    margin-bottom: 24px;
+}
+
+.back-button {
+    margin-bottom: 12px;
+    font-weight: 600;
+    --padding-start: 0;
+}
+
+.back-button ion-icon {
+    font-size: 20px;
+}
+
 h2 {
     font-size: 20px;
     font-weight: 600;
@@ -331,8 +372,8 @@ ion-card {
 .stages-section {
     margin-top: 32px;
 }
+
 .save-btn-wrapper {
     margin-top: 24px;
 }
-
 </style>
