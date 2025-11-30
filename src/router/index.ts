@@ -1,22 +1,46 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
-import { RouteRecordRaw } from 'vue-router';
-import HomePage from '../views/HomePage.vue'
+import { useAppStore } from '../store';
 
-const routes: Array<RouteRecordRaw> = [
+const routes = [
   {
     path: '/',
-    redirect: '/home'
+    redirect: '/login'
   },
   {
-    path: '/home',
-    name: 'Home',
-    component: HomePage
+    path: '/login',
+    name: 'Login',
+    component: () => import('../views/Login.vue')
+  },
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: () => import('../views/Dashboard.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/production',
+    name: 'Production',
+    component: () => import('../views/ProductionProcess.vue'),
+    meta: { requiresAuth: true }
   }
-]
+];
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(import.meta.env.BASE_URL || '/'),
   routes
-})
+});
 
-export default router
+// Navigation Guard
+router.beforeEach((to, from, next) => {
+  const store = useAppStore();
+  
+  if (to.meta.requiresAuth && !store.isAuthenticated) {
+    next('/login');
+  } else if (to.path === '/login' && store.isAuthenticated) {
+    next('/dashboard');
+  } else {
+    next();
+  }
+});
+
+export default router;
