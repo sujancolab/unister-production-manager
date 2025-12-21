@@ -232,16 +232,61 @@ const loadStages = async () => {
 
 const saveStages = async () => {
     try {
-        const payload = {
-            planning_id: selectedPlanning.value,
-            mark_no: selectedMarkNo.value,
-            stages: stages.value
-        };
+        const formData = new FormData();
+        formData.append('planning_id', selectedPlanning.value);
+        formData.append('mark_no', selectedMarkNo.value);
 
-        const res = await api.post('/saveStages', payload);
+        let fileCounter = 0;
+        let totalFiles = 0;
+        
+        // Process each stage
+        stages.value.forEach((stage, index) => {
+            formData.append(`stages[${index}][id]`, stage.id);
+            formData.append(`stages[${index}][completed]`, stage.completed ? '1' : '0');
+            formData.append(`stages[${index}][rejected]`, stage.rejected ? '1' : '0');
+            formData.append(`stages[${index}][completion_notes]`, stage.completion_notes || '');
+            formData.append(`stages[${index}][rejection_reason]`, stage.rejection_reason || '');
+            formData.append(`stages[${index}][stage_id]`, stage.id);
+
+            // Handle file uploads - Flatten files with stage reference
+            if (stage.selectedFiles && Array.isArray(stage.selectedFiles) && stage.selectedFiles.length > 0) {
+                stage.selectedFiles.forEach((fileObj) => {
+                    // If we have the actual File object, use it
+                    if (fileObj.file && fileObj.file instanceof File) {
+                        console.log('Adding file to FormData:', {
+                            name: fileObj.file.name,
+                            size: fileObj.file.size,
+                            stage_id: stage.id
+                        });
+                        
+                        // Use a simple flat key structure
+                        formData.append(
+                            `files[${fileCounter}][file]`,
+                            fileObj.file,
+                            fileObj.file.name
+                        );
+                        formData.append(
+                            `files[${fileCounter}][stage_id]`,
+                            stage.id
+                        );
+                        fileCounter++;
+                        totalFiles++;
+                    } else {
+                        console.warn('File object missing or invalid:', fileObj);
+                    }
+                });
+            }
+        });
+
+        console.log('FormData ready. Total files:', totalFiles);
+        console.log('FormData entries:', Array.from(formData.entries()).map(([k, v]) => [k, v instanceof File ? `File: ${v.name}` : v]));
+
+        const res = await api.post('/saveStages', formData);
 
         console.log("Save response:", res.data);
         alert("Stages saved successfully!");
+        // Reload stages to see updated data
+        loadStages();
     } catch (error) {
         console.error("Error saving stages:", error);
         alert("Something went wrong while saving!");

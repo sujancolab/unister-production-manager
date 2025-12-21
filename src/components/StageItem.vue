@@ -82,9 +82,70 @@
                     <ion-textarea
                         v-model="noteText"
                         :placeholder="isRejectMode ? 'Enter reason for rejection...' : 'Enter completion notes (optional)...'"
-                        rows="3"
+                        :rows="3"
                     ></ion-textarea>
                 </ion-item>
+
+                <!-- File Upload Section -->
+                <div class="upload-section">
+                    <ion-label class="upload-label">Attachments (Optional)</ion-label>
+                    <div class="file-input-wrapper">
+                        <input 
+                            ref="fileInput"
+                            type="file" 
+                            multiple 
+                            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                            @change="onFileSelected"
+                            style="display: none"
+                        />
+                        <ion-button 
+                            expand="block" 
+                            fill="outline"
+                            size="small"
+                            @click="fileInput?.click()"
+                        >
+                            <ion-icon slot="start" name="cloud-upload"></ion-icon>
+                            Choose Files
+                        </ion-button>
+                    </div>
+                    <p class="file-hint">Max file size: 5MB</p>
+                </div>
+
+                <!-- Attachment Preview -->
+                <div v-if="selectedFiles.length > 0" class="preview-section">
+                    <ion-label class="preview-label">Selected Files</ion-label>
+                    <div class="preview-grid">
+                        <div v-for="(file, index) in selectedFiles" :key="index" class="preview-card">
+                            <!-- Image Preview -->
+                            <div v-if="file.type.includes('image')" class="image-preview">
+                                <img :src="file.preview" :alt="file.name" />
+                            </div>
+
+                            <!-- PDF/Document Preview -->
+                            <div v-else class="file-preview">
+                                <ion-icon :name="getFileIcon(file.type)" class="file-icon"></ion-icon>
+                                <span>{{ getFileExtension(file.name) }}</span>
+                            </div>
+
+                            <!-- File Name and Remove Button -->
+                            <div class="preview-footer">
+                                <div class="file-info">
+                                    <ion-text class="file-name">{{ file.name }}</ion-text>
+                                    <ion-text class="file-size">{{ formatFileSize(file.size) }}</ion-text>
+                                </div>
+                                <ion-button 
+                                    fill="clear" 
+                                    size="small"
+                                    @click="removeFile(index)"
+                                    class="remove-btn"
+                                >
+                                    <ion-icon slot="icon-only" name="close-circle"></ion-icon>
+                                </ion-button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="note-actions">
                     <ion-button fill="clear" @click="cancelNote">Cancel</ion-button>
                     <ion-button 
@@ -100,7 +161,7 @@
     </ion-card>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue';
 import {
     IonCard,
@@ -110,7 +171,8 @@ import {
     IonBadge,
     IonItem,
     IonLabel,
-    IonTextarea
+    IonTextarea,
+    IonText
 } from '@ionic/vue';
 import { 
     checkmarkCircle, 
@@ -120,6 +182,15 @@ import {
     document, 
     alertCircle 
 } from 'ionicons/icons';
+import stageAttachmentService from '@/services/stageAttachmentService';
+
+interface FilePreview {
+    name: string;
+    size: number;
+    type: string;
+    preview: string;
+    file?: File;  // Add actual File object
+}
 
 const props = defineProps({
     stage: {
@@ -133,6 +204,8 @@ const emit = defineEmits(['updateStage']);
 const showNoteInput = ref(false);
 const isRejectMode = ref(false);
 const noteText = ref('');
+const selectedFiles = ref<FilePreview[]>([]);
+const fileInput = ref<HTMLInputElement | null>(null);
 
 const stageStatusClass = computed(() => {
     if (props.stage.rejected) return 'stage-rejected';
@@ -156,12 +229,14 @@ const handleReject = () => {
     isRejectMode.value = true;
     showNoteInput.value = true;
     noteText.value = '';
+    selectedFiles.value = [];
 };
 
 const handleComplete = () => {
     isRejectMode.value = false;
     showNoteInput.value = true;
     noteText.value = '';
+    selectedFiles.value = [];
 };
 
 const handleReset = () => {
@@ -184,6 +259,58 @@ const cancelNote = () => {
     showNoteInput.value = false;
     noteText.value = '';
     isRejectMode.value = false;
+    selectedFiles.value = [];
+    if (fileInput.value) {
+        fileInput.value.value = '';
+    }
+};
+
+const onFileSelected = async (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    if (input.files) {
+        for (let i = 0; i < input.files.length; i++) {
+            const file = input.files[i];
+            
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert(`File ${file.name} is too large. Max size is 5MB`);
+                continue;
+            }
+
+            let preview = '';
+            if (file.type.includes('image')) {
+                preview = await stageAttachmentService.generatePreviewUrl(file);
+            }
+
+            selectedFiles.value.push({
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                preview: preview,
+                file: file  // Store actual File object
+            });
+        }
+    }
+};
+
+const removeFile = (index: number) => {
+    selectedFiles.value.splice(index, 1);
+};
+
+const getFileIcon = (mimeType: string): string => {
+    if (mimeType.includes('pdf')) return 'document';
+    if (mimeType.includes('word') || mimeType.includes('msword')) return 'document-text';
+    if (mimeType.includes('sheet') || mimeType.includes('excel')) return 'table';
+    return 'attach';
+};
+
+const getFileExtension = (fileName: string): string => {
+    const ext = fileName.split('.').pop()?.toUpperCase() || 'FILE';
+    return ext;
+};
+
+const formatFileSize = (bytes: number): string => {
+    return stageAttachmentService.formatFileSize(bytes);
 };
 
 const confirmAction = () => {
@@ -200,7 +327,8 @@ const confirmAction = () => {
             rejection_reason: noteText.value,
             rejected_by: 'Current User', // Replace with actual user info
             stage_completed_date: null,
-            completion_notes: null
+            completion_notes: null,
+            selectedFiles: selectedFiles.value
         };
         emit('updateStage', updatedStage);
     } else {
@@ -214,7 +342,8 @@ const confirmAction = () => {
             completion_notes: noteText.value || null,
             completed_by: 'Current User', // Replace with actual user info
             stage_rejected_date: null,
-            rejection_reason: null
+            rejection_reason: null,
+            selectedFiles: selectedFiles.value
         };
         emit('updateStage', updatedStage);
     }
@@ -222,7 +351,7 @@ const confirmAction = () => {
     cancelNote();
 };
 
-const formatDate = (dateString) => {
+const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleString('en-US', {
@@ -346,6 +475,133 @@ ion-button {
     font-weight: 600;
 }
 
+/* Attachment Upload Styles */
+.upload-section {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    background-color: #f9f9f9;
+    margin-top: 16px;
+
+    .upload-label {
+        font-weight: 600;
+        color: #333;
+        display: block;
+        margin-bottom: 12px;
+        font-size: 14px;
+    }
+
+    .file-hint {
+        font-size: 12px;
+        color: #666;
+        margin-top: 8px;
+        margin-bottom: 0;
+    }
+}
+
+.preview-section {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    background-color: #f9f9f9;
+    margin-top: 16px;
+
+    .preview-label {
+        font-weight: 600;
+        color: #333;
+        display: block;
+        margin-bottom: 12px;
+        font-size: 14px;
+    }
+
+    .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 12px;
+    }
+
+    .preview-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+        background: white;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+
+        .image-preview {
+            width: 100%;
+            height: 100px;
+            overflow: hidden;
+            background: #f0f0f0;
+
+            img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+        }
+
+        .file-preview {
+            width: 100%;
+            height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0f0;
+            gap: 4px;
+
+            .file-icon {
+                font-size: 32px;
+                color: #666;
+            }
+
+            span {
+                font-size: 12px;
+                color: #666;
+                font-weight: 600;
+            }
+        }
+
+        .preview-footer {
+            padding: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-top: 1px solid #eee;
+            gap: 8px;
+
+            .file-info {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+
+                .file-name {
+                    font-size: 11px;
+                    color: #333;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    font-weight: 500;
+                }
+
+                .file-size {
+                    font-size: 10px;
+                    color: #999;
+                }
+            }
+
+            .remove-btn {
+                margin: 0;
+                flex-shrink: 0;
+            }
+        }
+    }
+}
+
 /* Responsive adjustments */
 @media (max-width: 576px) {
     .stage-header {
@@ -359,6 +615,10 @@ ion-button {
     
     .stage-actions ion-button {
         flex: 1;
+    }
+
+    .preview-section .preview-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     }
 }
 </style>
