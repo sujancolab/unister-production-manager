@@ -3,6 +3,24 @@ import { useAppStore } from '../store';
 
 const routes = [
   {
+    path: '/final-inspections',
+    name: 'FinalInspectionList',
+    component: () => import('../views/FinalInspection.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/final-inspections/create',
+    name: 'FinalInspectionCreate',
+    component: () => import('../views/FinalInspectionCreate.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/final-inspections/:id',
+    name: 'FinalInspectionDetail',
+    component: () => import('../views/FinalInspectionDetail.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/',
     redirect: '/login'
   },

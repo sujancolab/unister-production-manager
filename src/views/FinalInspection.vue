@@ -1,3 +1,73 @@
+<!-- <template>
+  <ion-page>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Final Inspection</ion-title>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content>
+      <ion-list>
+        <ion-item v-for="inspection in inspections" :key="inspection.id">
+          <ion-label>
+            <h2>Mark No: {{ inspection.mark_no }}</h2>
+            <p>Status: <span :class="statusClass(inspection.status)">{{ inspection.status }}</span></p>
+            <p>Created: {{ formatDate(inspection.created_at) }}</p>
+          </ion-label>
+          <ion-button slot="end" color="primary" @click="viewInspection(inspection)">View</ion-button>
+        </ion-item>
+      </ion-list>
+      <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+        <ion-fab-button @click="createInspection">
+          <ion-icon :icon="add"></ion-icon>
+        </ion-fab-button>
+      </ion-fab>
+    </ion-content>
+  </ion-page>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonLabel, IonButton, IonFab, IonFabButton, IonIcon } from '@ionic/vue';
+import { add } from 'ionicons/icons';
+import { useRouter } from 'vue-router';
+import { getFinalInspections } from '@/services/finalInspectionService';
+
+const router = useRouter();
+const inspections = ref<any[]>([]);
+
+const fetchInspections = async () => {
+  inspections.value = await getFinalInspections();
+};
+
+const viewInspection = (inspection: any) => {
+  router.push({ name: 'FinalInspectionDetail', params: { id: inspection.id } });
+};
+
+const createInspection = () => {
+  router.push({ name: 'FinalInspectionCreate' });
+};
+
+const statusClass = (status: string) => {
+  if (status === 'Completed') return 'text-success';
+  if (status === 'Rejected') return 'text-danger';
+  return 'text-warning';
+};
+
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleString();
+};
+
+onMounted(fetchInspections);
+</script>
+
+<style scoped>
+.text-success { color: #198754; }
+.text-danger { color: #dc3545; }
+.text-warning { color: #f0ad4e; }
+</style> -->
+
+
+
 <template>
     <ion-page>
         <Header />
@@ -6,7 +76,7 @@
         <ion-content id="main-content" class="ion-padding" :fullscreen="true">
             <ion-header collapse="condense">
                 <ion-toolbar>
-                    <ion-title size="large">Production Process</ion-title>
+                    <ion-title size="large">Production Process Final Inspection</ion-title>
                 </ion-toolbar>
             </ion-header>
 
@@ -16,7 +86,7 @@
                         <ion-icon slot="start" :icon="arrowBack"></ion-icon>
                         Back to Dashboard
                     </ion-button>
-                    <h1>Production Process</h1>
+                    <h1>Production Process Final Inspection</h1>
                 </div>
 
                 <!-- Selection Form -->
@@ -98,16 +168,14 @@
                 <div v-if="stages.length > 0" class="stages-section">
                     <ion-segment v-model="activeTab" class="mb-3">
                         <ion-segment-button value="stages">
-                            <ion-label>Stages</ion-label>
-                        </ion-segment-button>
-                        <ion-segment-button value="inspection">
                             <ion-label>Final Inspection</ion-label>
                         </ion-segment-button>
+                        
                     </ion-segment>
 
                     <div v-if="activeTab === 'stages'">
                         <h2>Production Stages</h2>
-                        <StageItem v-for="stage in stages" :key="stage.id" :stage="stage" @updateStage="updateStage" />
+                        <InspectionStage v-for="stage in stages" :key="stage.id" :stage="stage" @updateStage="updateStage" />
                         <div v-if="stages.length > 0" class="save-btn-wrapper">
                             <ion-button expand="block" color="success" @click="saveStages">
                                 Save Stages
@@ -115,7 +183,7 @@
                         </div>
                     </div>
 
-                    <div v-else-if="activeTab === 'inspection'">
+                    <!-- <div v-else-if="activeTab === 'inspection'">
                         <h2>Final Inspection</h2>
                         <ion-card>
                             <ion-card-content>
@@ -133,7 +201,7 @@
                                 </div>
                             </ion-card-content>
                         </ion-card>
-                    </div>
+                    </div> -->
                 </div>
 
             </div>
@@ -173,6 +241,7 @@ import StageItem from '../components/StageItem.vue';
 import { useAppStore } from '../store';
 import api from '@/services/api';
 import { getFinalInspection } from '@/services/finalInspectionService';
+import InspectionStage from '@/components/InspectionStage.vue';
 
 const store = useAppStore();
 const router = useRouter();
@@ -253,11 +322,11 @@ const loadStages = async () => {
         // Map stages with completed and rejected status
         stages.value = stages.value.map(el => ({
             ...el,
-            completed: el.stage_completed_date !== null,
-            rejected: el.stage_rejected_date !== null,
-            status: el.stage_rejected_date !== null 
+            completed: el.final_inspection_completed_at !== null,
+            rejected: el.final_inspection_rejected_at !== null,
+            status: el.final_inspection_rejected_at !== null 
                 ? 'rejected' 
-                : el.stage_completed_date !== null 
+                : el.final_inspection_completed_at !== null 
                 ? 'completed' 
                 : 'pending'
         }));
@@ -306,6 +375,8 @@ const saveStages = async () => {
         const formData = new FormData();
         formData.append('planning_id', selectedPlanning.value);
         formData.append('mark_no', selectedMarkNo.value);
+        formData.append('final_inspection', 1);
+
 
         let fileCounter = 0;
         let totalFiles = 0;
