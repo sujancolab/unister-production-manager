@@ -40,6 +40,12 @@ const routes = [
     name: 'Production',
     component: () => import('../views/ProductionProcess.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/packing-list',
+    name: 'PackingList',
+    component: () => import('../views/PackingList.vue'),
+    meta: { requiresAuth: true }
   }
 ];
 
