@@ -229,9 +229,23 @@ watch(() => form.value.client_id, async (newClientId) => {
 });
 
 const onScanSuccess = (decodedText, decodedResult) => {
-    // handle the scanned code as you like, for example:
     console.log(`Code matched = ${decodedText}`, decodedResult);
-    currentItem.value.mark_no = decodedText;
+    try {
+        const qrData = JSON.parse(decodedText);
+        if (qrData && qrData.mark_no) {
+            currentItem.value.mark_no = qrData.mark_no;
+            currentItem.value.quantity = qrData.quantity || 1;
+        } else {
+             // Fallback for non-json or differently structured qr codes
+            currentItem.value.mark_no = decodedText;
+            currentItem.value.quantity = 1;
+        }
+    } catch (e) {
+        // If parsing fails, assume the whole string is the mark_no
+        console.warn("QR code content is not a valid JSON, treating as plain text.");
+        currentItem.value.mark_no = decodedText;
+        currentItem.value.quantity = 1;
+    }
     closeScanner();
 };
 
