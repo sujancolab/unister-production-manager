@@ -150,6 +150,20 @@
                 </ion-card>
             </div>
         </ion-content>
+
+        <ion-modal :is-open="isScannerOpen" @didDismiss="closeScanner">
+            <ion-header>
+                <ion-toolbar>
+                    <ion-title>Scan QR Code</ion-title>
+                    <ion-buttons slot="end">
+                        <ion-button @click="closeScanner">Close</ion-button>
+                    </ion-buttons>
+                </ion-toolbar>
+            </ion-header>
+            <ion-content class="ion-padding">
+                <div id="qr-reader" style="width: 100%;"></div>
+            </ion-content>
+        </ion-modal>
     </ion-page>
 </template>
 
@@ -158,18 +172,22 @@ import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import {
     IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonCard, IonCardHeader, IonCardTitle, IonCardContent,
-    IonGrid, IonRow, IonCol, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonButton, IonIcon, IonList
+    IonGrid, IonRow, IonCol, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonButton, IonIcon, IonList,
+    IonModal, IonButtons
 } from '@ionic/vue';
 import { arrowBack, qrCodeOutline, trashOutline } from 'ionicons/icons';
 import Header from '../components/Header.vue';
 import Sidebar from '../components/Sidebar.vue';
 import { getPackingListFormData, getPackingListProjects, storePackingList } from '@/services/packingListService';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 const router = useRouter();
 const clients = ref([]);
 const transporters = ref([]);
 const projects = ref([]);
 const isSubmitting = ref(false);
+const isScannerOpen = ref(false);
+let html5QrcodeScanner = null;
 
 const form = ref({
     client_id: '',
@@ -210,11 +228,41 @@ watch(() => form.value.client_id, async (newClientId) => {
     }
 });
 
+const onScanSuccess = (decodedText, decodedResult) => {
+    // handle the scanned code as you like, for example:
+    console.log(`Code matched = ${decodedText}`, decodedResult);
+    currentItem.value.mark_no = decodedText;
+    closeScanner();
+};
+
+const onScanFailure = (error) => {
+  // handle scan failure, usually better to ignore and keep scanning.
+  // for example:
+  console.warn(`Code scan error = ${error}`);
+};
+
+
 const scanQR = () => {
-    // Placeholder for QR scanning logic
-    // In a real app, you would use @capacitor-community/barcode-scanner
-    console.log('Scanning QR Code...');
-    alert('QR Scanner would open here. For now, please enter Mark No manually.');
+    isScannerOpen.value = true;
+    setTimeout(() => {
+        if (!html5QrcodeScanner) {
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                "qr-reader",
+                { fps: 10, qrbox: {width: 250, height: 250} },
+                /* verbose= */ false);
+        }
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    }, 200); // Wait for modal to open
+};
+
+const closeScanner = () => {
+    if (html5QrcodeScanner) {
+        html5QrcodeScanner.clear().catch(error => {
+            console.error("Failed to clear html5QrcodeScanner.", error);
+        });
+        html5QrcodeScanner = null;
+    }
+    isScannerOpen.value = false;
 };
 
 const addItem = () => {

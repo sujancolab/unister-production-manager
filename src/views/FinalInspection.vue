@@ -1,73 +1,3 @@
-<!-- <template>
-  <ion-page>
-    <ion-header>
-      <ion-toolbar>
-        <ion-title>Final Inspection</ion-title>
-      </ion-toolbar>
-    </ion-header>
-    <ion-content>
-      <ion-list>
-        <ion-item v-for="inspection in inspections" :key="inspection.id">
-          <ion-label>
-            <h2>Mark No: {{ inspection.mark_no }}</h2>
-            <p>Status: <span :class="statusClass(inspection.status)">{{ inspection.status }}</span></p>
-            <p>Created: {{ formatDate(inspection.created_at) }}</p>
-          </ion-label>
-          <ion-button slot="end" color="primary" @click="viewInspection(inspection)">View</ion-button>
-        </ion-item>
-      </ion-list>
-      <ion-fab vertical="bottom" horizontal="end" slot="fixed">
-        <ion-fab-button @click="createInspection">
-          <ion-icon :icon="add"></ion-icon>
-        </ion-fab-button>
-      </ion-fab>
-    </ion-content>
-  </ion-page>
-</template>
-
-<script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonLabel, IonButton, IonFab, IonFabButton, IonIcon } from '@ionic/vue';
-import { add } from 'ionicons/icons';
-import { useRouter } from 'vue-router';
-import { getFinalInspections } from '@/services/finalInspectionService';
-
-const router = useRouter();
-const inspections = ref<any[]>([]);
-
-const fetchInspections = async () => {
-  inspections.value = await getFinalInspections();
-};
-
-const viewInspection = (inspection: any) => {
-  router.push({ name: 'FinalInspectionDetail', params: { id: inspection.id } });
-};
-
-const createInspection = () => {
-  router.push({ name: 'FinalInspectionCreate' });
-};
-
-const statusClass = (status: string) => {
-  if (status === 'Completed') return 'text-success';
-  if (status === 'Rejected') return 'text-danger';
-  return 'text-warning';
-};
-
-const formatDate = (date: string) => {
-  return new Date(date).toLocaleString();
-};
-
-onMounted(fetchInspections);
-</script>
-
-<style scoped>
-.text-success { color: #198754; }
-.text-danger { color: #dc3545; }
-.text-warning { color: #f0ad4e; }
-</style> -->
-
-
-
 <template>
     <ion-page>
         <Header />
@@ -157,51 +87,171 @@ onMounted(fetchInspections);
                             </ion-row>
                         </ion-grid>
 
-                        <ion-button expand="block" @click="handleMarkSelection" :disabled="!allSelectionsComplete"
+                        <ion-button expand="block" @click="loadFinalInspectionData" :disabled="!allSelectionsComplete"
                             class="mark-button">
-                            Mark & Show Stages
+                            Load Inspection Data
                         </ion-button>
                     </ion-card-content>
                 </ion-card>
 
-                <!-- Tabbed Interface: Stages / Final Inspection -->
-                <div v-if="stages.length > 0" class="stages-section">
-                    <ion-segment v-model="activeTab" class="mb-3">
-                        <ion-segment-button value="stages">
-                            <ion-label>Final Inspection</ion-label>
-                        </ion-segment-button>
+                <!-- Final Inspection Section -->
+                <div v-if="selectedMarkNo && finalInspectionData" class="final-inspection-section">
+                    <h2>Final Inspection for Mark No: {{ selectedMarkNo }}</h2>
+                    
+                    <ion-card>
+                        <ion-card-header>
+                            <ion-card-title>Inspection Details</ion-card-title>
+                        </ion-card-header>
                         
-                    </ion-segment>
+                        <ion-card-content>
+                            <!-- Status Section -->
+                            <div class="status-section mb-4">
+                                <ion-label>
+                                    <strong>Current Status:</strong> 
+                                    <ion-badge :color="getStatusColor(finalInspectionData.status)" class="ml-2">
+                                        {{ finalInspectionData.status }}
+                                    </ion-badge>
+                                </ion-label>
+                                
+                                <div v-if="finalInspectionData.completed_at" class="mt-2">
+                                    <strong>Completed On:</strong> {{ formatDate(finalInspectionData.completed_at) }}
+                                </div>
+                                <div v-if="finalInspectionData.rejected_at" class="mt-2">
+                                    <strong>Rejected On:</strong> {{ formatDate(finalInspectionData.rejected_at) }}
+                                </div>
+                            </div>
 
-                    <div v-if="activeTab === 'stages'">
-                        <h2>Production Stages</h2>
-                        <InspectionStage v-for="stage in stages" :key="stage.id" :stage="stage" @updateStage="updateStage" />
-                        <div v-if="stages.length > 0" class="save-btn-wrapper">
-                            <ion-button expand="block" color="success" @click="saveStages">
-                                Save Stages
-                            </ion-button>
-                        </div>
-                    </div>
+                            <!-- Inspection Form -->
+                            <div v-if="!finalInspectionData.status || finalInspectionData.status === 'pending'">
+                                <ion-item>
+                                    <ion-label position="stacked">Inspection Result</ion-label>
+                                    <ion-select v-model="inspectionResult" placeholder="Select Result">
+                                        <ion-select-option value="approved">Approved</ion-select-option>
+                                        <ion-select-option value="rejected">Rejected</ion-select-option>
+                                    </ion-select>
+                                </ion-item>
 
-                    <!-- <div v-else-if="activeTab === 'inspection'">
-                        <h2>Final Inspection</h2>
-                        <ion-card>
-                            <ion-card-content>
-                                <div v-if="finalInspection">
-                                    <ion-label>
-                                        <strong>Status:</strong> <span :class="statusClass(finalInspection.status)">{{ finalInspection.status }}</span><br>
-                                        <strong>Mark No:</strong> {{ finalInspection.mark_no }}<br>
-                                        <strong>Created:</strong> {{ formatDate(finalInspection.created_at) }}
+                                <ion-item class="mt-3">
+                                    <ion-label position="stacked">
+                                        {{ inspectionResult === 'rejected' ? 'Rejection Reason' : 'Inspection Notes' }}
+                                        <span v-if="inspectionResult === 'rejected'" class="required">*</span>
                                     </ion-label>
-                                    <ion-button expand="block" color="primary" @click="viewFinalInspection(finalInspection)">View</ion-button>
+                                    <ion-textarea
+                                        v-model="inspectionNotes"
+                                        :placeholder="inspectionResult === 'rejected' ? 'Enter reason for rejection...' : 'Enter inspection notes...'"
+                                        :rows="4"
+                                    ></ion-textarea>
+                                </ion-item>
+
+                                <!-- File Upload Section -->
+                                <div class="upload-section mt-4">
+                                    <ion-label class="upload-label">Attachments (Optional)</ion-label>
+                                    <div class="file-input-wrapper">
+                                        <input 
+                                            ref="fileInput"
+                                            type="file" 
+                                            multiple 
+                                            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                                            @change="onFileSelected"
+                                            style="display: none"
+                                        />
+                                        <ion-button 
+                                            expand="block" 
+                                            fill="outline"
+                                            size="small"
+                                            @click="fileInput?.click()"
+                                        >
+                                            <ion-icon slot="start" name="cloud-upload"></ion-icon>
+                                            Choose Files
+                                        </ion-button>
+                                    </div>
+                                    <p class="file-hint">Max file size: 5MB per file</p>
                                 </div>
-                                <div v-else>
-                                    <ion-label>No final inspection found for this mark.</ion-label>
-                                    <ion-button expand="block" color="success" @click="createFinalInspection">Create</ion-button>
+
+                                <!-- Selected Files Preview -->
+                                <div v-if="selectedFiles.length > 0" class="preview-section mt-4">
+                                    <ion-label class="preview-label">Selected Files ({{ selectedFiles.length }})</ion-label>
+                                    <div class="preview-grid">
+                                        <div v-for="(file, index) in selectedFiles" :key="index" class="preview-card">
+                                            <div v-if="file.type.includes('image')" class="image-preview">
+                                                <img :src="file.preview" :alt="file.name" />
+                                            </div>
+                                            <div v-else class="file-preview">
+                                                <ion-icon :name="getFileIcon(file.type)" class="file-icon"></ion-icon>
+                                                <span>{{ getFileExtension(file.name) }}</span>
+                                            </div>
+                                            <div class="preview-footer">
+                                                <div class="file-info">
+                                                    <ion-text class="file-name">{{ file.name }}</ion-text>
+                                                    <ion-text class="file-size">{{ formatFileSize(file.size) }}</ion-text>
+                                                </div>
+                                                <ion-button 
+                                                    fill="clear" 
+                                                    size="small"
+                                                    @click="removeFile(index)"
+                                                    class="remove-btn"
+                                                >
+                                                    <ion-icon slot="icon-only" name="close-circle"></ion-icon>
+                                                </ion-button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </ion-card-content>
-                        </ion-card>
-                    </div> -->
+
+                                <!-- Action Buttons -->
+                                <div class="action-buttons mt-4">
+                                    <ion-button expand="block" color="success" @click="submitInspection" 
+                                        :disabled="!inspectionResult || (inspectionResult === 'rejected' && !inspectionNotes.trim())">
+                                        Submit Inspection
+                                    </ion-button>
+                                </div>
+                            </div>
+
+                            <!-- View Mode (When inspection is completed/rejected) -->
+                            <div v-else>
+                                <!-- Notes Display -->
+                                <div class="notes-display mb-4">
+                                    <strong>{{ finalInspectionData.status === 'rejected' ? 'Rejection Reason' : 'Inspection Notes' }}:</strong>
+                                    <p>{{ finalInspectionData.comment || 'No notes provided' }}</p>
+                                </div>
+
+                                <!-- Attachments Display -->
+                                <div v-if="finalInspectionData.attachments && finalInspectionData.attachments.length > 0" class="attachments-display">
+                                    <strong>Attachments:</strong>
+                                    <div class="attachments-grid">
+                                        <div v-for="attachment in finalInspectionData.attachments" :key="attachment.id" 
+                                             class="attachment-card" @click="viewAttachment(attachment)">
+                                            <ion-icon :name="getFileIcon(attachment.file_type)" class="attachment-icon"></ion-icon>
+                                            <span class="attachment-name">{{ attachment.file_name }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Reset Button -->
+                                <div class="action-buttons mt-4">
+                                    <ion-button expand="block" color="medium" @click="resetInspection">
+                                        Reset Inspection
+                                    </ion-button>
+                                </div>
+                            </div>
+                        </ion-card-content>
+                    </ion-card>
+                </div>
+
+                <!-- No Data Message -->
+                <div v-else-if="selectedMarkNo && !finalInspectionData" class="no-data-section">
+                    <ion-card>
+                        <ion-card-content>
+                            <div class="text-center">
+                                <ion-icon name="document-text-outline" class="empty-icon"></ion-icon>
+                                <h3>No Inspection Data Found</h3>
+                                <p>No final inspection record found for Mark No: {{ selectedMarkNo }}</p>
+                                <ion-button color="primary" @click="createNewInspection">
+                                    Create New Inspection
+                                </ion-button>
+                            </div>
+                        </ion-card-content>
+                    </ion-card>
                 </div>
 
             </div>
@@ -231,28 +281,29 @@ import {
     IonToolbar,
     IonTitle,
     IonIcon,
-    IonSegment,
-    IonSegmentButton
+    IonTextarea,
+    IonBadge
 } from '@ionic/vue';
 import { arrowBack } from 'ionicons/icons';
 import Header from '../components/Header.vue';
 import Sidebar from '../components/Sidebar.vue';
-import StageItem from '../components/StageItem.vue';
-import { useAppStore } from '../store';
 import api from '@/services/api';
-import { getFinalInspection } from '@/services/finalInspectionService';
-import InspectionStage from '@/components/InspectionStage.vue';
+// Import your service functions
+import { 
+    getFinalInspections, 
+    getFinalInspection, 
+    createFinalInspection, 
+    updateFinalInspection 
+} from '@/services/finalInspectionService';
 
-const store = useAppStore();
 const router = useRouter();
 
 // Reactive data
 const clients = ref([]);
-const projects = ref(['Project Alpha', 'Project Beta', 'Project Gamma']);
-const boms = ref(['BOM-001', 'BOM-002', 'BOM-003']);
-const plannings = ref(['Planning Q1', 'Planning Q2', 'Planning Q3']);
+const projects = ref([]);
+const boms = ref([]);
+const plannings = ref([]);
 const planningMarkNos = ref([]);
-const stages = ref([]);
 
 const selectedClient = ref('');
 const selectedProject = ref('');
@@ -260,21 +311,23 @@ const selectedBOM = ref('');
 const selectedPlanning = ref('');
 const selectedMarkNo = ref('');
 
-const activeTab = ref('stages');
-const finalInspection = ref(null);
+// Inspection data
+const finalInspectionData = ref(null);
+const inspectionResult = ref('');
+const inspectionNotes = ref('');
+const selectedFiles = ref([]);
+const fileInput = ref(null);
 
-// Fetch Clients from API
+// Fetch data functions
 const loadClients = async () => {
     try {
         const res = await api.get('/getClients');
         clients.value = res.data.clients;
-        console.log("clients.value", clients.value);
     } catch (error) {
         console.error("Error loading clients:", error);
     }
 };
 
-// Fetch Projects based on selected client
 const loadProjects = async (clientId) => {
     try {
         const res = await api.get(`/getProjects?client_id=${clientId}`);
@@ -288,7 +341,6 @@ const loadBoms = async (projectId) => {
     try {
         const res = await api.get(`/getBoms?project_id=${projectId}`);
         boms.value = [res.data];
-        console.log("boms", boms.value);
     } catch (error) {
         console.error("Error loading boms:", error);
     }
@@ -298,7 +350,6 @@ const loadPlannings = async (bom_id) => {
     try {
         const res = await api.get(`/getPlanning?bom_id=${bom_id}`);
         plannings.value = res.data;
-        console.log("planning", plannings.value);
     } catch (error) {
         console.error("Error loading planning:", error);
     }
@@ -308,131 +359,222 @@ const loadMarknos = async (planning_id) => {
     try {
         const res = await api.get(`/getPlanningMarkNos?planning_id=${planning_id}`);
         planningMarkNos.value = res.data;
-        console.log("planning", plannings.value);
     } catch (error) {
-        console.error("Error loading planning:", error);
+        console.error("Error loading mark numbers:", error);
     }
-}
+};
 
-const loadStages = async () => {
-    try {
-        const res = await api.get(`/getStages?planning_id=${selectedPlanning.value}&mark_no=${selectedMarkNo.value}`);
-        stages.value = res.data;
-        
-        // Map stages with completed and rejected status
-        stages.value = stages.value.map(el => ({
-            ...el,
-            completed: el.final_inspection_completed_at !== null,
-            rejected: el.final_inspection_rejected_at !== null,
-            status: el.final_inspection_rejected_at !== null 
-                ? 'rejected' 
-                : el.final_inspection_completed_at !== null 
-                ? 'completed' 
-                : 'pending'
-        }));
-
-        console.log("stages", stages.value);
-    } catch (error) {
-        console.error("Error loading stages:", error);
-    }
-}
-
-const fetchFinalInspection = async () => {
+const loadFinalInspectionData = async () => {
     if (!selectedMarkNo.value) return;
+    
     try {
-        finalInspection.value = await getFinalInspection(selectedMarkNo.value);
-    } catch {
-        finalInspection.value = null;
+        // Method 1: Use your getFinalInspections service
+        // const allInspections = await getFinalInspections();
+        // finalInspectionData.value = allInspections.find(
+        //     inspection => inspection.mark_no === selectedMarkNo.value
+        // ) || null;
+        
+        // Method 2: If you prefer a direct API call
+        const response = await api.get(`/final-inspections?mark_no=${selectedMarkNo.value}`);
+        finalInspectionData.value = response.data[0] || null;
+        
+        if (finalInspectionData.value) {
+            inspectionResult.value = finalInspectionData.value.status;
+            inspectionNotes.value = finalInspectionData.value.comment || '';
+        } else {
+            inspectionResult.value = '';
+            inspectionNotes.value = '';
+        }
+        
+        selectedFiles.value = [];
+    } catch (error) {
+        console.error("Error loading final inspection data:", error);
+        finalInspectionData.value = null;
     }
 };
 
-const viewFinalInspection = (inspection) => {
-    router.push({ name: 'FinalInspectionDetail', params: { id: inspection.id } });
-};
+const submitInspection = async () => {
+    if (!inspectionResult.value) {
+        alert('Please select an inspection result');
+        return;
+    }
 
-const createFinalInspection = () => {
-    router.push({ name: 'FinalInspectionCreate', query: {
-        mark_no: selectedMarkNo.value,
-        project_id: selectedProject.value,
-        planning_id: selectedPlanning.value,
-        bom_id: selectedBOM.value,
-        client_id: selectedClient.value
-    }});
-};
+    if (inspectionResult.value === 'rejected' && !inspectionNotes.value.trim()) {
+        alert('Please provide rejection reason');
+        return;
+    }
 
-const statusClass = (status) => {
-    if (status === 'Completed') return 'text-success';
-    if (status === 'Rejected') return 'text-danger';
-    return 'text-warning';
-};
-
-const formatDate = (date) => {
-    return new Date(date).toLocaleString();
-};
-
-const saveStages = async () => {
     try {
-        const formData = new FormData();
-        formData.append('planning_id', selectedPlanning.value);
-        formData.append('mark_no', selectedMarkNo.value);
-        formData.append('final_inspection', 1);
+        const payload = {
+            mark_no: selectedMarkNo.value,
+            planning_id: selectedPlanning.value,
+            project_id: selectedProject.value,
+            bom_id: selectedBOM.value,
+            client_id: selectedClient.value,
+            status: inspectionResult.value,
+            notes: inspectionNotes.value,
+            completed_at: inspectionResult.value === 'approved' ? new Date().toISOString() : null,
+            rejected_at: inspectionResult.value === 'rejected' ? new Date().toISOString() : null,
+            // You might want to add user information
+            // inspected_by: currentUser.value.id
+        };
 
-
-        let fileCounter = 0;
-        let totalFiles = 0;
+        // Handle file uploads separately if needed
+        // Since your service might not handle FormData, you can upload files separately
         
-        // Process each stage
-        stages.value.forEach((stage, index) => {
-            formData.append(`stages[${index}][id]`, stage.id);
-            formData.append(`stages[${index}][completed]`, stage.completed ? '1' : '0');
-            formData.append(`stages[${index}][rejected]`, stage.rejected ? '1' : '0');
-            formData.append(`stages[${index}][completion_notes]`, stage.completion_notes || '');
-            formData.append(`stages[${index}][rejection_reason]`, stage.rejection_reason || '');
-            formData.append(`stages[${index}][stage_id]`, stage.id);
+        if (finalInspectionData.value && finalInspectionData.value.id) {
+            // Update existing inspection using your service
+            const updated = await updateFinalInspection(finalInspectionData.value.id, payload);
+            finalInspectionData.value = updated;
+            
+            // Upload attachments separately if needed
+            await uploadAttachments(finalInspectionData.value.id);
+        } else {
+            // Create new inspection using your service
+            const created = await createFinalInspection(payload);
+            finalInspectionData.value = created;
+            console.log("created",created);
+            
+            
+            // Upload attachments separately if needed
+            if (created.id) {
+                await uploadAttachments(created.id);
+            }
+        }
 
-            // Handle file uploads - Flatten files with stage reference
-            if (stage.selectedFiles && Array.isArray(stage.selectedFiles) && stage.selectedFiles.length > 0) {
-                stage.selectedFiles.forEach((fileObj) => {
-                    // If we have the actual File object, use it
-                    if (fileObj.file && fileObj.file instanceof File) {
-                        console.log('Adding file to FormData:', {
-                            name: fileObj.file.name,
-                            size: fileObj.file.size,
-                            stage_id: stage.id
-                        });
-                        
-                        // Use a simple flat key structure
-                        formData.append(
-                            `files[${fileCounter}][file]`,
-                            fileObj.file,
-                            fileObj.file.name
-                        );
-                        formData.append(
-                            `files[${fileCounter}][stage_id]`,
-                            stage.id
-                        );
-                        fileCounter++;
-                        totalFiles++;
-                    } else {
-                        console.warn('File object missing or invalid:', fileObj);
+        alert('Inspection saved successfully!');
+        // loadFinalInspectionData(); // Reload data
+    } catch (error) {
+        console.error("Error saving inspection:", error);
+        alert('Failed to save inspection');
+    }
+};
+
+const uploadAttachments = async (inspectionId) => {
+    if (selectedFiles.value.length === 0) return;
+    
+    try {
+        for (const fileObj of selectedFiles.value) {
+            if (fileObj.file) {
+                const formData = new FormData();
+                formData.append('attachment', fileObj.file);
+                formData.append('final_inspection_id', inspectionId);
+                
+                // Use direct API call for file upload
+                await api.post('/final-inspection-attachments', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
                     }
                 });
             }
-        });
-
-        console.log('FormData ready. Total files:', totalFiles);
-        console.log('FormData entries:', Array.from(formData.entries()).map(([k, v]) => [k, v instanceof File ? `File: ${v.name}` : v]));
-
-        const res = await api.post('/saveStages', formData);
-
-        console.log("Save response:", res.data);
-        alert("Stages saved successfully!");
-        // Reload stages to see updated data
-        loadStages();
+        }
     } catch (error) {
-        console.error("Error saving stages:", error);
-        alert("Something went wrong while saving!");
+        console.error("Error uploading attachments:", error);
+        // You might want to handle this more gracefully
     }
+};
+
+const resetInspection = async () => {
+    if (!confirm('Are you sure you want to reset this inspection?')) return;
+
+    try {
+        if (finalInspectionData.value && finalInspectionData.value.id) {
+            // You might need to create a delete function in your service
+            await api.delete(`/final-inspections/${finalInspectionData.value.id}`);
+            alert('Inspection reset successfully');
+            loadFinalInspectionData();
+        }
+    } catch (error) {
+        console.error("Error resetting inspection:", error);
+        alert('Failed to reset inspection');
+    }
+};
+
+const createNewInspection = () => {
+    inspectionResult.value = '';
+    inspectionNotes.value = '';
+    selectedFiles.value = [];
+    finalInspectionData.value = {
+        status: 'pending',
+        notes: '',
+        attachments: []
+    };
+};
+
+const onFileSelected = async (event) => {
+    const input = event.target;
+    if (input.files) {
+        for (let i = 0; i < input.files.length; i++) {
+            const file = input.files[i];
+            
+            if (file.size > 5 * 1024 * 1024) {
+                alert(`File ${file.name} is too large. Max size is 5MB`);
+                continue;
+            }
+
+            let preview = '';
+            if (file.type.includes('image')) {
+                preview = URL.createObjectURL(file);
+            }
+
+            selectedFiles.value.push({
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                preview: preview,
+                file: file
+            });
+        }
+    }
+};
+
+const removeFile = (index) => {
+    selectedFiles.value.splice(index, 1);
+};
+
+const getFileIcon = (mimeType) => {
+    if (mimeType.includes('pdf')) return 'document';
+    if (mimeType.includes('word') || mimeType.includes('msword')) return 'document-text';
+    if (mimeType.includes('sheet') || mimeType.includes('excel')) return 'table';
+    if (mimeType.includes('image')) return 'image';
+    return 'attach';
+};
+
+const getFileExtension = (fileName) => {
+    const ext = fileName.split('.').pop()?.toUpperCase() || 'FILE';
+    return ext;
+};
+
+const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+const getStatusColor = (status) => {
+    switch(status) {
+        case 'approved': return 'success';
+        case 'rejected': return 'danger';
+        default: return 'medium';
+    }
+};
+
+const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+};
+
+const viewAttachment = (attachment) => {
+    window.open(attachment.file_url, '_blank');
 };
 
 const allSelectionsComplete = computed(() => {
@@ -443,32 +585,11 @@ const allSelectionsComplete = computed(() => {
         selectedMarkNo.value;
 });
 
-const handleMarkSelection = () => {
-    if (allSelectionsComplete.value) {
-        store.setSelections(
-            selectedClient.value,
-            selectedProject.value,
-            selectedBOM.value,
-            selectedPlanning.value
-        );
-        loadStages()
-    }
-};
-
-const updateStage = (updatedStage) => {
-    stages.value = stages.value.map(s =>
-        s.id === updatedStage.id ? updatedStage : s
-    );
-};
-
-// Navigate back to dashboard
 const goToDashboard = () => {
-    router.push('/dashboard'); // Change '/dashboard' to your actual dashboard route
+    router.push('/dashboard');
 };
 
-// Watchers - ALL declared AFTER the refs they depend on
-watch(selectedMarkNo, fetchFinalInspection);
-
+// Watchers remain the same
 watch(selectedClient, (newVal) => {
     if (newVal) {
         selectedProject.value = "";
@@ -501,10 +622,14 @@ watch(selectedPlanning, (newVal) => {
     }
 });
 
-// Load Clients on Page Load
+watch(selectedMarkNo, (newVal) => {
+    if (newVal) {
+        loadFinalInspectionData();
+    }
+});
+
 onMounted(() => {
     loadClients();
-    fetchFinalInspection();
 });
 </script>
 
@@ -559,23 +684,202 @@ ion-card {
     font-weight: 600;
 }
 
-.stages-section {
+.final-inspection-section {
     margin-top: 32px;
 }
 
-.save-btn-wrapper {
-    margin-top: 24px;
-}
-
-.text-success {
-    color: #10b981;
-}
-
-.text-danger {
+.required {
     color: #ef4444;
+    margin-left: 4px;
 }
 
-.text-warning {
-    color: #f59e0b;
+/* Upload Styles */
+.upload-section {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    background-color: #f9f9f9;
+    margin-top: 16px;
+}
+
+.upload-label {
+    font-weight: 600;
+    color: #333;
+    display: block;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+.file-hint {
+    font-size: 12px;
+    color: #666;
+    margin-top: 8px;
+    margin-bottom: 0;
+}
+
+/* Preview Styles */
+.preview-section {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    background-color: #f9f9f9;
+    margin-top: 16px;
+}
+
+.preview-label {
+    font-weight: 600;
+    color: #333;
+    display: block;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+.preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+}
+
+.preview-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    background: white;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.image-preview {
+    width: 100%;
+    height: 100px;
+    overflow: hidden;
+    background: #f0f0f0;
+}
+
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.file-preview {
+    width: 100%;
+    height: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f0f0f0;
+    gap: 4px;
+}
+
+.file-icon {
+    font-size: 32px;
+    color: #666;
+}
+
+.preview-footer {
+    padding: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-top: 1px solid #eee;
+    gap: 8px;
+}
+
+.file-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.file-name {
+    font-size: 11px;
+    color: #333;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.file-size {
+    font-size: 10px;
+    color: #999;
+}
+
+.remove-btn {
+    margin: 0;
+    flex-shrink: 0;
+}
+
+/* Attachments Display */
+.attachments-display {
+    margin-top: 16px;
+}
+
+.attachments-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.attachment-card {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.attachment-card:hover {
+    background-color: #f5f5f5;
+}
+
+.attachment-icon {
+    font-size: 20px;
+    margin-right: 8px;
+    color: #666;
+}
+
+.attachment-name {
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Empty State */
+.no-data-section .text-center {
+    text-align: center;
+    padding: 32px;
+}
+
+.empty-icon {
+    font-size: 64px;
+    color: #ccc;
+    margin-bottom: 16px;
+}
+
+.mt-2 { margin-top: 8px; }
+.mt-3 { margin-top: 12px; }
+.mt-4 { margin-top: 16px; }
+.mb-4 { margin-bottom: 16px; }
+.ml-2 { margin-left: 8px; }
+
+/* Responsive */
+@media (max-width: 576px) {
+    .preview-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+    
+    .attachments-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
 }
 </style>
