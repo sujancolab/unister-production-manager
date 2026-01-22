@@ -12,246 +12,298 @@
 
             <div class="production-container">
                 <div class="page-header">
-                    <ion-button fill="clear" color="medium" @click="goToDashboard" class="back-button">
-                        <ion-icon slot="start" :icon="arrowBack"></ion-icon>
-                        Back to Dashboard
-                    </ion-button>
-                    <h1>Production Process Final Inspection</h1>
+                    <div class="header-left">
+                        <ion-button v-if="viewMode === 'form'" fill="clear" color="medium" @click="goBack" class="back-button">
+                            <ion-icon slot="start" :icon="arrowBack"></ion-icon>
+                            Back to List
+                        </ion-button>
+                        <ion-button v-else fill="clear" color="medium" @click="goToDashboard" class="back-button">
+                            <ion-icon slot="start" :icon="arrowBack"></ion-icon>
+                            Back to Dashboard
+                        </ion-button>
+                    </div>
+                    <div class="header-center">
+                        <h4 style="margin: 0;">Final Inspection</h4>
+                    </div>
+                    <div class="header-right">
+                        <ion-button v-if="viewMode === 'list'" @click="showCreateForm">
+                            Create Inspection
+                        </ion-button>
+                    </div>
                 </div>
 
-                <!-- Selection Form -->
-                <ion-card>
-                    <ion-card-header>
-                        <ion-card-title>Select Details</ion-card-title>
-                    </ion-card-header>
-                    <ion-card-content>
-                        <ion-grid>
-                            <ion-row>
-                                <ion-col size="12" size-md="6">
-                                    <ion-item>
-                                        <ion-label position="stacked">Client</ion-label>
-                                        <ion-select v-model="selectedClient" placeholder="Select Client">
-                                            <ion-select-option v-for="client in clients" :key="client"
-                                                :value="client.id">
-                                                {{ client.name }}
-                                            </ion-select-option>
-                                        </ion-select>
-                                    </ion-item>
-                                </ion-col>
+                <!-- Inspection List View -->
+                <div v-if="viewMode === 'list'">
+                    <ion-card>
+                        <ion-card-content>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Production Planning</th>
+                                        <th>Mark No</th>
+                                        <th>Status</th>
+                                        <th>Created At</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="inspection in finalInspections" :key="inspection.id">
+                                        <td data-label="ID">{{ inspection.id }}</td>
+                                        <td data-label="Production Planning">{{ inspection.production_planning?.production_planning_number }}</td>
+                                        <td data-label="Mark No">{{ inspection.mark_no }}</td>
+                                        <td data-label="Status">
+                                            <ion-badge :color="getStatusColor(inspection.status)">
+                                                {{ inspection.status }}
+                                            </ion-badge>
+                                        </td>
+                                        <td data-label="Created At">{{ formatDate(inspection.created_at) }}</td>
+                                        <td data-label="Actions">
+                                            <ion-button size="small" @click="editInspection(inspection)">View</ion-button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </ion-card-content>
+                    </ion-card>
+                </div>
 
-                                <ion-col size="12" size-md="6">
-                                    <ion-item>
-                                        <ion-label position="stacked">Project</ion-label>
-                                        <ion-select v-model="selectedProject" placeholder="Select Project">
-                                            <ion-select-option v-for="project in projects" :key="project"
-                                                :value="project.id">
-                                                {{ project.project_id }}
-                                            </ion-select-option>
-                                        </ion-select>
-                                    </ion-item>
-                                </ion-col>
-
-                                <ion-col size="12" size-md="6">
-                                    <ion-item>
-                                        <ion-label position="stacked">BOM</ion-label>
-                                        <ion-select v-model="selectedBOM" placeholder="Select BOM">
-                                            <ion-select-option v-for="bom in boms" :key="bom" :value="bom.id">
-                                                {{ bom.bom_number }}
-                                            </ion-select-option>
-                                        </ion-select>
-                                    </ion-item>
-                                </ion-col>
-
-                                <ion-col size="12" size-md="6">
-                                    <ion-item>
-                                        <ion-label position="stacked">Production Planning</ion-label>
-                                        <ion-select v-model="selectedPlanning" placeholder="Select Planning">
-                                            <ion-select-option v-for="planning in plannings" :key="planning"
-                                                :value="planning.id">
-                                                {{ planning.production_planning_number }}
-                                            </ion-select-option>
-                                        </ion-select>
-                                    </ion-item>
-                                </ion-col>
-                                <ion-col size="12" size-md="6">
-                                    <ion-item>
-                                        <ion-label position="stacked">Mark No</ion-label>
-                                        <ion-select v-model="selectedMarkNo" placeholder="Select Mark No">
-                                            <ion-select-option v-for="planningmarkno in planningMarkNos"
-                                                :key="planningmarkno" :value="planningmarkno">
-                                                {{ planningmarkno }}
-                                            </ion-select-option>
-                                        </ion-select>
-                                    </ion-item>
-                                </ion-col>
-                            </ion-row>
-                        </ion-grid>
-
-                        <ion-button expand="block" @click="loadFinalInspectionData" :disabled="!allSelectionsComplete"
-                            class="mark-button">
-                            Load Inspection Data
-                        </ion-button>
-                    </ion-card-content>
-                </ion-card>
-
-                <!-- Final Inspection Section -->
-                <div v-if="selectedMarkNo && finalInspectionData" class="final-inspection-section">
-                    <h2>Final Inspection for Mark No: {{ selectedMarkNo }}</h2>
-                    
+                <!-- Inspection Create/Edit Form View -->
+                <div v-if="viewMode === 'form'">
+                    <!-- Selection Form -->
                     <ion-card>
                         <ion-card-header>
-                            <ion-card-title>Inspection Details</ion-card-title>
+                            <ion-card-title>Select Details</ion-card-title>
                         </ion-card-header>
-                        
                         <ion-card-content>
-                            <!-- Status Section -->
-                            <div class="status-section mb-4">
-                                <ion-label>
-                                    <strong>Current Status:</strong> 
-                                    <ion-badge :color="getStatusColor(finalInspectionData.status)" class="ml-2">
-                                        {{ finalInspectionData.status }}
-                                    </ion-badge>
-                                </ion-label>
-                                
-                                <div v-if="finalInspectionData.completed_at" class="mt-2">
-                                    <strong>Completed On:</strong> {{ formatDate(finalInspectionData.completed_at) }}
-                                </div>
-                                <div v-if="finalInspectionData.rejected_at" class="mt-2">
-                                    <strong>Rejected On:</strong> {{ formatDate(finalInspectionData.rejected_at) }}
-                                </div>
-                            </div>
+                            <ion-grid>
+                                <ion-row>
+                                    <ion-col size="12" size-md="6">
+                                        <ion-item>
+                                            <ion-label position="stacked">Client</ion-label>
+                                            <ion-select v-model="selectedClient" placeholder="Select Client">
+                                                <ion-select-option v-for="client in clients" :key="client"
+                                                    :value="client.id">
+                                                    {{ client.name }}
+                                                </ion-select-option>
+                                            </ion-select>
+                                        </ion-item>
+                                    </ion-col>
 
-                            <!-- Inspection Form -->
-                            <div v-if="!finalInspectionData.status || finalInspectionData.status === 'pending'">
-                                <ion-item>
-                                    <ion-label position="stacked">Inspection Result</ion-label>
-                                    <ion-select v-model="inspectionResult" placeholder="Select Result">
-                                        <ion-select-option value="approved">Approved</ion-select-option>
-                                        <ion-select-option value="rejected">Rejected</ion-select-option>
-                                    </ion-select>
-                                </ion-item>
+                                    <ion-col size="12" size-md="6">
+                                        <ion-item>
+                                            <ion-label position="stacked">Project</ion-label>
+                                            <ion-select v-model="selectedProject" placeholder="Select Project">
+                                                <ion-select-option v-for="project in projects" :key="project"
+                                                    :value="project.id">
+                                                    {{ project.project_id }}
+                                                </ion-select-option>
+                                            </ion-select>
+                                        </ion-item>
+                                    </ion-col>
 
-                                <ion-item class="mt-3">
-                                    <ion-label position="stacked">
-                                        {{ inspectionResult === 'rejected' ? 'Rejection Reason' : 'Inspection Notes' }}
-                                        <span v-if="inspectionResult === 'rejected'" class="required">*</span>
+                                    <ion-col size="12" size-md="6">
+                                        <ion-item>
+                                            <ion-label position="stacked">BOM</ion-label>
+                                            <ion-select v-model="selectedBOM" placeholder="Select BOM">
+                                                <ion-select-option v-for="bom in boms" :key="bom" :value="bom.id">
+                                                    {{ bom.bom_number }}
+                                                </ion-select-option>
+                                            </ion-select>
+                                        </ion-item>
+                                    </ion-col>
+
+                                    <ion-col size="12" size-md="6">
+                                        <ion-item>
+                                            <ion-label position="stacked">Production Planning</ion-label>
+                                            <ion-select v-model="selectedPlanning" placeholder="Select Planning">
+                                                <ion-select-option v-for="planning in plannings" :key="planning"
+                                                    :value="planning.id">
+                                                    {{ planning.production_planning_number }}
+                                                </ion-select-option>
+                                            </ion-select>
+                                        </ion-item>
+                                    </ion-col>
+                                    <ion-col size="12" size-md="6">
+                                        <ion-item>
+                                            <ion-label position="stacked">Mark No</ion-label>
+                                            <ion-select v-model="selectedMarkNo" placeholder="Select Mark No">
+                                                <ion-select-option v-for="planningmarkno in planningMarkNos"
+                                                    :key="planningmarkno" :value="planningmarkno">
+                                                    {{ planningmarkno }}
+                                                </ion-select-option>
+                                            </ion-select>
+                                        </ion-item>
+                                    </ion-col>
+                                </ion-row>
+                            </ion-grid>
+
+                            <ion-button expand="block" @click="loadFinalInspectionData" :disabled="!allSelectionsComplete"
+                                class="mark-button">
+                                Load Inspection Data
+                            </ion-button>
+                        </ion-card-content>
+                    </ion-card>
+
+                    <!-- Final Inspection Section -->
+                    <div v-if="selectedMarkNo && finalInspectionData" class="final-inspection-section">
+                        <h2>Final Inspection for Mark No: {{ selectedMarkNo }}</h2>
+                        
+                        <ion-card>
+                            <ion-card-header>
+                                <ion-card-title>Inspection Details</ion-card-title>
+                            </ion-card-header>
+                            
+                            <ion-card-content>
+                                <!-- Status Section -->
+                                <div class="status-section mb-4">
+                                    <ion-label>
+                                        <strong>Current Status:</strong> 
+                                        <ion-badge :color="getStatusColor(finalInspectionData.status)" class="ml-2">
+                                            {{ finalInspectionData.status }}
+                                        </ion-badge>
                                     </ion-label>
-                                    <ion-textarea
-                                        v-model="inspectionNotes"
-                                        :placeholder="inspectionResult === 'rejected' ? 'Enter reason for rejection...' : 'Enter inspection notes...'"
-                                        :rows="4"
-                                    ></ion-textarea>
-                                </ion-item>
+                                    
+                                    <div v-if="finalInspectionData.completed_at" class="mt-2">
+                                        <strong>Completed On:</strong> {{ formatDate(finalInspectionData.completed_at) }}
+                                    </div>
+                                    <div v-if="finalInspectionData.rejected_at" class="mt-2">
+                                        <strong>Rejected On:</strong> {{ formatDate(finalInspectionData.rejected_at) }}
+                                    </div>
+                                </div>
 
-                                <!-- File Upload Section -->
-                                <div class="upload-section mt-4">
-                                    <ion-label class="upload-label">Attachments (Optional)</ion-label>
-                                    <div class="file-input-wrapper">
-                                        <input 
-                                            ref="fileInput"
-                                            type="file" 
-                                            multiple 
-                                            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
-                                            @change="onFileSelected"
-                                            style="display: none"
-                                        />
-                                        <ion-button 
-                                            expand="block" 
-                                            fill="outline"
-                                            size="small"
-                                            @click="fileInput?.click()"
-                                        >
-                                            <ion-icon slot="start" name="cloud-upload"></ion-icon>
-                                            Choose Files
+                                <!-- Inspection Form -->
+                                <div v-if="!finalInspectionData.status || finalInspectionData.status === 'pending'">
+                                    <ion-item>
+                                        <ion-label position="stacked">Inspection Result</ion-label>
+                                        <ion-select v-model="inspectionResult" placeholder="Select Result">
+                                            <ion-select-option value="approved">Approved</ion-select-option>
+                                            <ion-select-option value="rejected">Rejected</ion-select-option>
+                                        </ion-select>
+                                    </ion-item>
+
+                                    <ion-item class="mt-3">
+                                        <ion-label position="stacked">
+                                            {{ inspectionResult === 'rejected' ? 'Rejection Reason' : 'Inspection Notes' }}
+                                            <span v-if="inspectionResult === 'rejected'" class="required">*</span>
+                                        </ion-label>
+                                        <ion-textarea
+                                            v-model="inspectionNotes"
+                                            :placeholder="inspectionResult === 'rejected' ? 'Enter reason for rejection...' : 'Enter inspection notes...'"
+                                            :rows="4"
+                                        ></ion-textarea>
+                                    </ion-item>
+
+                                    <!-- File Upload Section -->
+                                    <div class="upload-section mt-4">
+                                        <ion-label class="upload-label">Attachments (Optional)</ion-label>
+                                        <div class="file-input-wrapper">
+                                            <input 
+                                                ref="fileInput"
+                                                type="file" 
+                                                multiple 
+                                                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                                                @change="onFileSelected"
+                                                style="display: none"
+                                            />
+                                            <ion-button 
+                                                expand="block" 
+                                                fill="outline"
+                                                size="small"
+                                                @click="fileInput?.click()"
+                                            >
+                                                <ion-icon slot="start" name="cloud-upload"></ion-icon>
+                                                Choose Files
+                                            </ion-button>
+                                        </div>
+                                        <p class="file-hint">Max file size: 5MB per file</p>
+                                    </div>
+
+                                    <!-- Selected Files Preview -->
+                                    <div v-if="selectedFiles.length > 0" class="preview-section mt-4">
+                                        <ion-label class="preview-label">Selected Files ({{ selectedFiles.length }})</ion-label>
+                                        <div class="preview-grid">
+                                            <div v-for="(file, index) in selectedFiles" :key="index" class="preview-card">
+                                                <div v-if="file.type.includes('image')" class="image-preview">
+                                                    <img :src="file.preview" :alt="file.name" />
+                                                </div>
+                                                <div v-else class="file-preview">
+                                                    <ion-icon :name="getFileIcon(file.type)" class="file-icon"></ion-icon>
+                                                    <span>{{ getFileExtension(file.name) }}</span>
+                                                </div>
+                                                <div class="preview-footer">
+                                                    <div class="file-info">
+                                                        <ion-text class="file-name">{{ file.name }}</ion-text>
+                                                        <ion-text class="file-size">{{ formatFileSize(file.size) }}</ion-text>
+                                                    </div>
+                                                    <ion-button 
+                                                        fill="clear" 
+                                                        size="small"
+                                                        @click="removeFile(index)"
+                                                        class="remove-btn"
+                                                    >
+                                                        <ion-icon slot="icon-only" name="close-circle"></ion-icon>
+                                                    </ion-button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Action Buttons -->
+                                    <div class="action-buttons mt-4">
+                                        <ion-button expand="block" color="success" @click="submitInspection" 
+                                            :disabled="!inspectionResult || (inspectionResult === 'rejected' && !inspectionNotes.trim())">
+                                            Submit Inspection
                                         </ion-button>
                                     </div>
-                                    <p class="file-hint">Max file size: 5MB per file</p>
                                 </div>
 
-                                <!-- Selected Files Preview -->
-                                <div v-if="selectedFiles.length > 0" class="preview-section mt-4">
-                                    <ion-label class="preview-label">Selected Files ({{ selectedFiles.length }})</ion-label>
-                                    <div class="preview-grid">
-                                        <div v-for="(file, index) in selectedFiles" :key="index" class="preview-card">
-                                            <div v-if="file.type.includes('image')" class="image-preview">
-                                                <img :src="file.preview" :alt="file.name" />
-                                            </div>
-                                            <div v-else class="file-preview">
-                                                <ion-icon :name="getFileIcon(file.type)" class="file-icon"></ion-icon>
-                                                <span>{{ getFileExtension(file.name) }}</span>
-                                            </div>
-                                            <div class="preview-footer">
-                                                <div class="file-info">
-                                                    <ion-text class="file-name">{{ file.name }}</ion-text>
-                                                    <ion-text class="file-size">{{ formatFileSize(file.size) }}</ion-text>
-                                                </div>
-                                                <ion-button 
-                                                    fill="clear" 
-                                                    size="small"
-                                                    @click="removeFile(index)"
-                                                    class="remove-btn"
-                                                >
-                                                    <ion-icon slot="icon-only" name="close-circle"></ion-icon>
-                                                </ion-button>
+                                <!-- View Mode (When inspection is completed/rejected) -->
+                                <div v-else>
+                                    <!-- Notes Display -->
+                                    <div class="notes-display mb-4">
+                                        <strong>{{ finalInspectionData.status === 'rejected' ? 'Rejection Reason' : 'Inspection Notes' }}:</strong>
+                                        <p>{{ finalInspectionData.comment || 'No notes provided' }}</p>
+                                    </div>
+
+                                    <!-- Attachments Display -->
+                                    <div v-if="finalInspectionData.attachments && finalInspectionData.attachments.length > 0" class="attachments-display">
+                                        <strong>Attachments:</strong>
+                                        <div class="attachments-grid">
+                                            <div v-for="attachment in finalInspectionData.attachments" :key="attachment.id" 
+                                                 class="attachment-card" @click="viewAttachment(attachment)">
+                                                <ion-icon :name="getFileIcon(attachment.file_type)" class="attachment-icon"></ion-icon>
+                                                <span class="attachment-name">{{ attachment.file_name }}</span>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <!-- Action Buttons -->
-                                <div class="action-buttons mt-4">
-                                    <ion-button expand="block" color="success" @click="submitInspection" 
-                                        :disabled="!inspectionResult || (inspectionResult === 'rejected' && !inspectionNotes.trim())">
-                                        Submit Inspection
-                                    </ion-button>
-                                </div>
-                            </div>
-
-                            <!-- View Mode (When inspection is completed/rejected) -->
-                            <div v-else>
-                                <!-- Notes Display -->
-                                <div class="notes-display mb-4">
-                                    <strong>{{ finalInspectionData.status === 'rejected' ? 'Rejection Reason' : 'Inspection Notes' }}:</strong>
-                                    <p>{{ finalInspectionData.comment || 'No notes provided' }}</p>
-                                </div>
-
-                                <!-- Attachments Display -->
-                                <div v-if="finalInspectionData.attachments && finalInspectionData.attachments.length > 0" class="attachments-display">
-                                    <strong>Attachments:</strong>
-                                    <div class="attachments-grid">
-                                        <div v-for="attachment in finalInspectionData.attachments" :key="attachment.id" 
-                                             class="attachment-card" @click="viewAttachment(attachment)">
-                                            <ion-icon :name="getFileIcon(attachment.file_type)" class="attachment-icon"></ion-icon>
-                                            <span class="attachment-name">{{ attachment.file_name }}</span>
-                                        </div>
+                                    <!-- Reset Button -->
+                                    <div class="action-buttons mt-4">
+                                        <ion-button expand="block" color="medium" @click="resetInspection">
+                                            Reset Inspection
+                                        </ion-button>
                                     </div>
                                 </div>
+                            </ion-card-content>
+                        </ion-card>
+                    </div>
 
-                                <!-- Reset Button -->
-                                <div class="action-buttons mt-4">
-                                    <ion-button expand="block" color="medium" @click="resetInspection">
-                                        Reset Inspection
+                    <!-- No Data Message -->
+                    <div v-else-if="selectedMarkNo && !finalInspectionData" class="no-data-section">
+                        <ion-card>
+                            <ion-card-content>
+                                <div class="text-center">
+                                    <ion-icon name="document-text-outline" class="empty-icon"></ion-icon>
+                                    <h3>No Inspection Data Found</h3>
+                                    <p>No final inspection record found for Mark No: {{ selectedMarkNo }}</p>
+                                    <ion-button color="primary" @click="createNewInspection">
+                                        Create New Inspection
                                     </ion-button>
                                 </div>
-                            </div>
-                        </ion-card-content>
-                    </ion-card>
-                </div>
-
-                <!-- No Data Message -->
-                <div v-else-if="selectedMarkNo && !finalInspectionData" class="no-data-section">
-                    <ion-card>
-                        <ion-card-content>
-                            <div class="text-center">
-                                <ion-icon name="document-text-outline" class="empty-icon"></ion-icon>
-                                <h3>No Inspection Data Found</h3>
-                                <p>No final inspection record found for Mark No: {{ selectedMarkNo }}</p>
-                                <ion-button color="primary" @click="createNewInspection">
-                                    Create New Inspection
-                                </ion-button>
-                            </div>
-                        </ion-card-content>
-                    </ion-card>
+                            </ion-card-content>
+                        </ion-card>
+                    </div>
                 </div>
 
             </div>
@@ -298,6 +350,10 @@ import {
 
 const router = useRouter();
 
+// View mode
+const viewMode = ref('list'); // 'list' or 'form'
+const finalInspections = ref([]);
+
 // Reactive data
 const clients = ref([]);
 const projects = ref([]);
@@ -319,6 +375,16 @@ const selectedFiles = ref([]);
 const fileInput = ref(null);
 
 // Fetch data functions
+const fetchAllFinalInspections = async () => {
+    try {
+        const response = await getFinalInspections();
+        console.log("response--",response);
+        finalInspections.value = response;
+    } catch (error) {
+        console.error('Error fetching final inspections:', error);
+    }
+};
+
 const loadClients = async () => {
     try {
         const res = await api.get('/getClients');
@@ -404,73 +470,49 @@ const submitInspection = async () => {
         return;
     }
 
-    try {
-        const payload = {
-            mark_no: selectedMarkNo.value,
-            planning_id: selectedPlanning.value,
-            project_id: selectedProject.value,
-            bom_id: selectedBOM.value,
-            client_id: selectedClient.value,
-            status: inspectionResult.value,
-            notes: inspectionNotes.value,
-            completed_at: inspectionResult.value === 'approved' ? new Date().toISOString() : null,
-            rejected_at: inspectionResult.value === 'rejected' ? new Date().toISOString() : null,
-            // You might want to add user information
-            // inspected_by: currentUser.value.id
-        };
+    const formData = new FormData();
 
-        // Handle file uploads separately if needed
-        // Since your service might not handle FormData, you can upload files separately
-        
+    formData.append('mark_no', selectedMarkNo.value);
+    formData.append('planning_id', selectedPlanning.value);
+    formData.append('project_id', selectedProject.value);
+    formData.append('bom_id', selectedBOM.value);
+    formData.append('client_id', selectedClient.value);
+    formData.append('status', inspectionResult.value);
+    formData.append('notes', inspectionNotes.value);
+
+    if (inspectionResult.value === 'approved') {
+        formData.append('completed_at', new Date().toISOString());
+    }
+    if (inspectionResult.value === 'rejected') {
+        formData.append('rejected_at', new Date().toISOString());
+    }
+
+    // Append files
+    selectedFiles.value.forEach(fileObj => {
+        if (fileObj.file) {
+            formData.append('attachments[]', fileObj.file, fileObj.name);
+        }
+    });
+
+    try {
         if (finalInspectionData.value && finalInspectionData.value.id) {
-            // Update existing inspection using your service
-            const updated = await updateFinalInspection(finalInspectionData.value.id, payload);
+            // For Laravel, when using FormData with PUT/PATCH, you often need to use POST and spoof the method.
+            formData.append('_method', 'PUT');
+            // Assuming updateFinalInspection sends a POST request to an update endpoint
+            const updated = await updateFinalInspection(finalInspectionData.value.id, formData);
             finalInspectionData.value = updated;
-            
-            // Upload attachments separately if needed
-            await uploadAttachments(finalInspectionData.value.id);
         } else {
-            // Create new inspection using your service
-            const created = await createFinalInspection(payload);
+            // Create new inspection
+            const created = await createFinalInspection(formData);
             finalInspectionData.value = created;
-            console.log("created",created);
-            
-            
-            // Upload attachments separately if needed
-            if (created.id) {
-                await uploadAttachments(created.id);
-            }
         }
 
         alert('Inspection saved successfully!');
-        // loadFinalInspectionData(); // Reload data
+        goBack();
+        await fetchAllFinalInspections();
     } catch (error) {
         console.error("Error saving inspection:", error);
         alert('Failed to save inspection');
-    }
-};
-
-const uploadAttachments = async (inspectionId) => {
-    if (selectedFiles.value.length === 0) return;
-    
-    try {
-        for (const fileObj of selectedFiles.value) {
-            if (fileObj.file) {
-                const formData = new FormData();
-                formData.append('attachment', fileObj.file);
-                formData.append('final_inspection_id', inspectionId);
-                
-                // Use direct API call for file upload
-                await api.post('/final-inspection-attachments', formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
-                });
-            }
-        }
-    } catch (error) {
-        console.error("Error uploading attachments:", error);
-        // You might want to handle this more gracefully
     }
 };
 
@@ -589,6 +631,41 @@ const goToDashboard = () => {
     router.push('/dashboard');
 };
 
+const goBack = () => {
+    viewMode.value = 'list';
+    resetForm();
+};
+
+const showCreateForm = () => {
+    viewMode.value = 'form';
+    resetForm();
+};
+
+const editInspection = (inspection) => {
+    viewMode.value = 'form';
+    // This is a simplified edit. You might need to load more data
+    // or handle this differently depending on your data structure.
+    selectedClient.value = inspection.client_id;
+    selectedProject.value = inspection.project_id;
+    selectedBOM.value = inspection.bom_id;
+    selectedPlanning.value = inspection.planning_id;
+    selectedMarkNo.value = inspection.mark_no;
+    loadFinalInspectionData();
+};
+
+const resetForm = () => {
+    selectedClient.value = '';
+    selectedProject.value = '';
+    selectedBOM.value = '';
+    selectedPlanning.value = '';
+    selectedMarkNo.value = '';
+    finalInspectionData.value = null;
+    inspectionResult.value = '';
+    inspectionNotes.value = '';
+    selectedFiles.value = [];
+};
+
+
 // Watchers remain the same
 watch(selectedClient, (newVal) => {
     if (newVal) {
@@ -629,6 +706,7 @@ watch(selectedMarkNo, (newVal) => {
 });
 
 onMounted(() => {
+    fetchAllFinalInspections();
     loadClients();
 });
 </script>
@@ -653,13 +731,31 @@ h1 {
 }
 
 .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 24px;
+    width: 100%;
+}
+.header-left, .header-center, .header-right {
+    flex: 1;
+}
+.header-left {
+    display: flex;
+    justify-content: flex-start;
+}
+.header-center {
+    text-align: center;
+}
+.header-right {
+    display: flex;
+    justify-content: flex-end;
 }
 
 .back-button {
-    margin-bottom: 12px;
+    /* margin-bottom: 12px;*/
     font-weight: 600;
-    --padding-start: 0;
+    /*--padding-start: 0;*/
 }
 
 .back-button ion-icon {
@@ -691,6 +787,23 @@ ion-card {
 .required {
     color: #ef4444;
     margin-left: 4px;
+}
+
+/* Table Styles */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    text-align: left;
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+th {
+    background-color: #f8f8f8;
+    font-weight: 600;
 }
 
 /* Upload Styles */
@@ -871,6 +984,51 @@ ion-card {
 .mt-4 { margin-top: 16px; }
 .mb-4 { margin-bottom: 16px; }
 .ml-2 { margin-left: 8px; }
+
+/* Responsive Table */
+@media (max-width: 768px) {
+    table thead {
+        display: none; /* Hide table headers */
+    }
+    table tbody, table tr, table td {
+        display: block;
+        width: 100%;
+    }
+    table tr {
+        margin-bottom: 1rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    table td {
+        text-align: right;
+        padding-left: 50%;
+        position: relative;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    table td:last-child {
+        border-bottom: 0;
+    }
+    table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 12px;
+        width: calc(50% - 24px);
+        text-align: left;
+        font-weight: bold;
+    }
+    /* Special handling for badge and button inside cells */
+    table td[data-label="Status"] ion-badge {
+        float: right;
+    }
+    table td[data-label="Actions"] {
+       padding-top: 8px;
+       padding-bottom: 8px;
+    }
+    table td[data-label="Actions"] ion-button {
+        float: right;
+    }
+}
 
 /* Responsive */
 @media (max-width: 576px) {

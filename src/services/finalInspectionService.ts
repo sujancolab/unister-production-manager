@@ -30,7 +30,9 @@ import api from './api'; // Your API instance
 export async function getFinalInspections() {
   try {
     const { data } = await api.get('/final-inspections');
-    return data.data || [];
+    // console.log("data",data);
+    
+    return data || [];
   } catch (error) {
     console.error('Error fetching final inspections:', error);
     throw error;
