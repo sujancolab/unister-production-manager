@@ -49,8 +49,6 @@ const password = ref('');
 
 const handleLogin = async () => {
     if (username.value && password.value) {
-        store.login(username.value, password.value);
-
         const result = await store.login(username.value, password.value);
 
         if (!result.success) {

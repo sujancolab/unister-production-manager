@@ -15,10 +15,10 @@ export const useAppStore = defineStore('app', {
   }),
 
   actions: {
-    async login(email: string, password: string) {
+    async login(username: string, password: string) {
       try {
         const response = await api.post('/login', {
-          email,
+          username,
           password
         });
 
