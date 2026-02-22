@@ -81,66 +81,91 @@
                                     <ion-col size="12" size-md="6">
                                         <ion-item>
                                             <ion-label position="stacked">Client</ion-label>
-                                            <ion-select v-model="selectedClient" placeholder="Select Client">
+                                            <ion-select v-model="selectedClient" placeholder="Select Client"
+                                                :disabled="selectionLoading.clients">
                                                 <ion-select-option v-for="client in clients" :key="client"
                                                     :value="client.id">
                                                     {{ client.name }}
                                                 </ion-select-option>
                                             </ion-select>
                                         </ion-item>
+                                        <div v-if="selectionLoading.clients" class="select-loader">
+                                            <ion-spinner name="crescent" />
+                                            <span>Loading clients...</span>
+                                        </div>
                                     </ion-col>
 
                                     <ion-col size="12" size-md="6">
                                         <ion-item>
                                             <ion-label position="stacked">Project</ion-label>
-                                            <ion-select v-model="selectedProject" placeholder="Select Project">
+                                            <ion-select v-model="selectedProject" placeholder="Select Project"
+                                                :disabled="selectionLoading.projects || !selectedClient">
                                                 <ion-select-option v-for="project in projects" :key="project"
                                                     :value="project.id">
                                                     {{ project.project_id }}
                                                 </ion-select-option>
                                             </ion-select>
                                         </ion-item>
+                                        <div v-if="selectionLoading.projects" class="select-loader">
+                                            <ion-spinner name="crescent" />
+                                            <span>Loading projects...</span>
+                                        </div>
                                     </ion-col>
 
                                     <ion-col size="12" size-md="6">
                                         <ion-item>
                                             <ion-label position="stacked">BOM</ion-label>
-                                            <ion-select v-model="selectedBOM" placeholder="Select BOM">
+                                            <ion-select v-model="selectedBOM" placeholder="Select BOM"
+                                                :disabled="selectionLoading.boms || !selectedProject">
                                                 <ion-select-option v-for="bom in boms" :key="bom" :value="bom.id">
                                                     {{ bom.bom_number }}
                                                 </ion-select-option>
                                             </ion-select>
                                         </ion-item>
+                                        <div v-if="selectionLoading.boms" class="select-loader">
+                                            <ion-spinner name="crescent" />
+                                            <span>Loading BOMs...</span>
+                                        </div>
                                     </ion-col>
 
                                     <ion-col size="12" size-md="6">
                                         <ion-item>
                                             <ion-label position="stacked">Production Planning</ion-label>
-                                            <ion-select v-model="selectedPlanning" placeholder="Select Planning">
+                                            <ion-select v-model="selectedPlanning" placeholder="Select Planning"
+                                                :disabled="selectionLoading.plannings || !selectedBOM">
                                                 <ion-select-option v-for="planning in plannings" :key="planning"
                                                     :value="planning.id">
                                                     {{ planning.production_planning_number }}
                                                 </ion-select-option>
                                             </ion-select>
                                         </ion-item>
+                                        <div v-if="selectionLoading.plannings" class="select-loader">
+                                            <ion-spinner name="crescent" />
+                                            <span>Loading planning...</span>
+                                        </div>
                                     </ion-col>
                                     <ion-col size="12" size-md="6">
                                         <ion-item>
                                             <ion-label position="stacked">Mark No</ion-label>
-                                            <ion-select v-model="selectedMarkNo" placeholder="Select Mark No">
+                                            <ion-select v-model="selectedMarkNo" placeholder="Select Mark No"
+                                                :disabled="selectionLoading.markNos || !selectedPlanning">
                                                 <ion-select-option v-for="planningmarkno in planningMarkNos"
                                                     :key="planningmarkno" :value="planningmarkno">
                                                     {{ planningmarkno }}
                                                 </ion-select-option>
                                             </ion-select>
                                         </ion-item>
+                                        <div v-if="selectionLoading.markNos || selectionLoading.inspectionData" class="select-loader">
+                                            <ion-spinner name="crescent" />
+                                            <span>{{ selectionLoading.markNos ? 'Loading mark numbers...' : 'Loading inspection data...' }}</span>
+                                        </div>
                                     </ion-col>
                                 </ion-row>
                             </ion-grid>
 
-                            <ion-button expand="block" @click="loadFinalInspectionData" :disabled="!allSelectionsComplete"
+                            <ion-button expand="block" @click="loadFinalInspectionData" :disabled="!allSelectionsComplete || selectionLoading.inspectionData"
                                 class="mark-button">
-                                Load Inspection Data
+                                {{ selectionLoading.inspectionData ? 'Loading Inspection Data...' : 'Load Inspection Data' }}
                             </ion-button>
                         </ion-card-content>
                     </ion-card>
@@ -312,7 +337,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import {
     IonPage,
@@ -334,7 +359,8 @@ import {
     IonTitle,
     IonIcon,
     IonTextarea,
-    IonBadge
+    IonBadge,
+    IonSpinner
 } from '@ionic/vue';
 import { arrowBack } from 'ionicons/icons';
 import Header from '../components/Header.vue';
@@ -366,6 +392,14 @@ const selectedProject = ref('');
 const selectedBOM = ref('');
 const selectedPlanning = ref('');
 const selectedMarkNo = ref('');
+const selectionLoading = reactive({
+    clients: false,
+    projects: false,
+    boms: false,
+    plannings: false,
+    markNos: false,
+    inspectionData: false
+});
 
 // Inspection data
 const finalInspectionData = ref(null);
@@ -386,53 +420,68 @@ const fetchAllFinalInspections = async () => {
 };
 
 const loadClients = async () => {
+    selectionLoading.clients = true;
     try {
         const res = await api.get('/getClients');
         clients.value = res.data.clients;
     } catch (error) {
         console.error("Error loading clients:", error);
+    } finally {
+        selectionLoading.clients = false;
     }
 };
 
 const loadProjects = async (clientId) => {
+    selectionLoading.projects = true;
     try {
         const res = await api.get(`/getProjects?client_id=${clientId}`);
         projects.value = res.data.projects;
     } catch (error) {
         console.error("Error loading projects:", error);
+    } finally {
+        selectionLoading.projects = false;
     }
 };
 
 const loadBoms = async (projectId) => {
+    selectionLoading.boms = true;
     try {
         const res = await api.get(`/getBoms?project_id=${projectId}`);
         boms.value = [res.data];
     } catch (error) {
         console.error("Error loading boms:", error);
+    } finally {
+        selectionLoading.boms = false;
     }
 };
 
 const loadPlannings = async (bom_id) => {
+    selectionLoading.plannings = true;
     try {
         const res = await api.get(`/getPlanning?bom_id=${bom_id}`);
         plannings.value = res.data;
     } catch (error) {
         console.error("Error loading planning:", error);
+    } finally {
+        selectionLoading.plannings = false;
     }
 };
 
 const loadMarknos = async (planning_id) => {
+    selectionLoading.markNos = true;
     try {
         const res = await api.get(`/getPlanningMarkNos?planning_id=${planning_id}`);
         planningMarkNos.value = res.data;
     } catch (error) {
         console.error("Error loading mark numbers:", error);
+    } finally {
+        selectionLoading.markNos = false;
     }
 };
 
 const loadFinalInspectionData = async () => {
     if (!selectedMarkNo.value) return;
-    
+    selectionLoading.inspectionData = true;
     try {
         // Method 1: Use your getFinalInspections service
         // const allInspections = await getFinalInspections();
@@ -456,6 +505,8 @@ const loadFinalInspectionData = async () => {
     } catch (error) {
         console.error("Error loading final inspection data:", error);
         finalInspectionData.value = null;
+    } finally {
+        selectionLoading.inspectionData = false;
     }
 };
 
@@ -756,6 +807,15 @@ h1 {
     /* margin-bottom: 12px;*/
     font-weight: 600;
     /*--padding-start: 0;*/
+}
+
+.select-loader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px 0;
+    color: #6b7280;
+    font-size: 13px;
 }
 
 .back-button ion-icon {

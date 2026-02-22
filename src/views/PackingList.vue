@@ -29,27 +29,38 @@
                                 <ion-col size="12" size-md="6">
                                     <ion-item>
                                         <ion-label position="stacked">Client</ion-label>
-                                        <ion-select v-model="form.client_id" placeholder="Select Client">
+                                        <ion-select v-model="form.client_id" placeholder="Select Client"
+                                            :disabled="selectionLoading.formData">
                                             <ion-select-option v-for="client in clients" :key="client.id" :value="client.id">
                                                 {{ client.name }}
                                             </ion-select-option>
                                         </ion-select>
                                     </ion-item>
+                                    <div v-if="selectionLoading.formData" class="select-loader">
+                                        <ion-spinner name="crescent" />
+                                        <span>Loading clients and transporters...</span>
+                                    </div>
                                 </ion-col>
                                 <ion-col size="12" size-md="6">
                                     <ion-item>
                                         <ion-label position="stacked">Project</ion-label>
-                                        <ion-select v-model="form.project_id" placeholder="Select Project" :disabled="!projects.length">
+                                        <ion-select v-model="form.project_id" placeholder="Select Project"
+                                            :disabled="selectionLoading.projects || !projects.length || !form.client_id">
                                             <ion-select-option v-for="project in projects" :key="project.id" :value="project.id">
                                                 {{ project.project_id }} - {{ project.description }}
                                             </ion-select-option>
                                         </ion-select>
                                     </ion-item>
+                                    <div v-if="selectionLoading.projects" class="select-loader">
+                                        <ion-spinner name="crescent" />
+                                        <span>Loading projects...</span>
+                                    </div>
                                 </ion-col>
                                 <ion-col size="12" size-md="6">
                                     <ion-item>
                                         <ion-label position="stacked">Transporter</ion-label>
-                                        <ion-select v-model="form.transporter_id" placeholder="Select Transporter">
+                                        <ion-select v-model="form.transporter_id" placeholder="Select Transporter"
+                                            :disabled="selectionLoading.formData">
                                             <ion-select-option v-for="transporter in transporters" :key="transporter.id" :value="transporter.id">
                                                 {{ transporter.name }}
                                             </ion-select-option>
@@ -173,7 +184,7 @@ import { useRouter } from 'vue-router';
 import {
     IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonCard, IonCardHeader, IonCardTitle, IonCardContent,
     IonGrid, IonRow, IonCol, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonButton, IonIcon, IonList,
-    IonModal, IonButtons
+    IonModal, IonButtons, IonSpinner
 } from '@ionic/vue';
 import { arrowBack, qrCodeOutline, trashOutline } from 'ionicons/icons';
 import Header from '../components/Header.vue';
@@ -185,6 +196,10 @@ const router = useRouter();
 const clients = ref([]);
 const transporters = ref([]);
 const projects = ref([]);
+const selectionLoading = ref({
+    formData: false,
+    projects: false
+});
 const isSubmitting = ref(false);
 const isScannerOpen = ref(false);
 let html5QrcodeScanner = null;
@@ -206,12 +221,15 @@ const currentItem = ref({
 });
 
 const loadFormData = async () => {
+    selectionLoading.value.formData = true;
     try {
         const data = await getPackingListFormData();
         clients.value = data.clients;
         transporters.value = data.transporters;
     } catch (error) {
         console.error('Error loading form data:', error);
+    } finally {
+        selectionLoading.value.formData = false;
     }
 };
 
@@ -219,11 +237,14 @@ watch(() => form.value.client_id, async (newClientId) => {
     form.value.project_id = '';
     projects.value = [];
     if (newClientId) {
+        selectionLoading.value.projects = true;
         try {
             const data = await getPackingListProjects(newClientId);
             projects.value = data.projects;
         } catch (error) {
             console.error('Error loading projects:', error);
+        } finally {
+            selectionLoading.value.projects = false;
         }
     }
 });
@@ -328,4 +349,13 @@ onMounted(() => {
 .page-header { margin-bottom: 24px; }
 .back-button { margin-bottom: 12px; font-weight: 600; --padding-start: 0; }
 .text-medium { color: #666; }
+
+.select-loader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px 0;
+    color: #6b7280;
+    font-size: 13px;
+}
 </style>
