@@ -1,9 +1,8 @@
 <template>
     <ion-page>
         <Header />
-        <Sidebar />
 
-        <ion-content id="main-content" class="ion-padding" :fullscreen="true">
+        <ion-content class="ion-padding" :fullscreen="true">
             <ion-header collapse="condense">
                 <ion-toolbar>
                     <ion-title size="large">Packing List</ion-title>
@@ -188,7 +187,6 @@ import {
 } from '@ionic/vue';
 import { arrowBack, qrCodeOutline, trashOutline } from 'ionicons/icons';
 import Header from '../components/Header.vue';
-import Sidebar from '../components/Sidebar.vue';
 import { getPackingListFormData, getPackingListProjects, storePackingList } from '@/services/packingListService';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 

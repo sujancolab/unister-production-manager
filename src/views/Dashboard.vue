@@ -1,9 +1,8 @@
 <template>
   <ion-page>
     <Header />
-    <Sidebar />
     
-    <ion-content id="main-content" class="ion-padding" :fullscreen="true">
+    <ion-content class="ion-padding" :fullscreen="true">
       <ion-header collapse="condense">
         <ion-toolbar>
           <ion-title size="large">Dashboard</ion-title>
@@ -30,7 +29,6 @@
 <script setup>
 import { IonPage, IonContent, IonCard, IonCardContent, IonHeader, IonToolbar, IonTitle } from '@ionic/vue';
 import Header from '../components/Header.vue';
-import Sidebar from '../components/Sidebar.vue';
 import { useAppStore } from '../store';
 
 const store = useAppStore();

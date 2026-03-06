@@ -1,9 +1,8 @@
 <template>
     <ion-page>
         <Header />
-        <Sidebar />
 
-        <ion-content id="main-content" class="ion-padding" :fullscreen="true">
+        <ion-content class="ion-padding" :fullscreen="true">
             <ion-header collapse="condense">
                 <ion-toolbar>
                     <ion-title size="large">Production Process</ion-title>
@@ -194,11 +193,10 @@ import {
 } from '@ionic/vue';
 import { arrowBack } from 'ionicons/icons';
 import Header from '../components/Header.vue';
-import Sidebar from '../components/Sidebar.vue';
 import StageItem from '../components/StageItem.vue';
 import { useAppStore } from '../store';
 import api from '@/services/api';
-import { getFinalInspection } from '@/services/finalInspectionService';
+import { getFinalInspectionByMarkNo } from '@/services/finalInspectionService';
 
 const store = useAppStore();
 const router = useRouter();
@@ -322,10 +320,13 @@ const loadStages = async () => {
 }
 
 const fetchFinalInspection = async () => {
-    if (!selectedMarkNo.value) return;
+    if (!selectedMarkNo.value || !selectedPlanning.value) return;
     selectionLoading.finalInspection = true;
     try {
-        finalInspection.value = await getFinalInspection(selectedMarkNo.value);
+        finalInspection.value = await getFinalInspectionByMarkNo(
+            selectedMarkNo.value,
+            selectedPlanning.value
+        );
     } catch {
         finalInspection.value = null;
     } finally {

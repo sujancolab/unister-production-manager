@@ -1,9 +1,8 @@
 <template>
     <ion-page>
         <Header />
-        <Sidebar />
 
-        <ion-content id="main-content" class="ion-padding" :fullscreen="true">
+        <ion-content class="ion-padding" :fullscreen="true">
             <ion-header collapse="condense">
                 <ion-toolbar>
                     <ion-title size="large">Production Process Final Inspection</ion-title>
@@ -364,7 +363,6 @@ import {
 } from '@ionic/vue';
 import { arrowBack } from 'ionicons/icons';
 import Header from '../components/Header.vue';
-import Sidebar from '../components/Sidebar.vue';
 import api from '@/services/api';
 // Import your service functions
 import { 

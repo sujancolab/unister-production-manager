@@ -42,22 +42,27 @@ export async function getFinalInspections() {
 export async function getFinalInspection(id: number) {
   try {
     const { data } = await api.get(`/final-inspections/${id}`);
-    return data.data;
+    return data?.data ?? data ?? null;
   } catch (error) {
     console.error('Error fetching final inspection:', error);
     throw error;
   }
 }
 
-export async function getFinalInspectionByMarkNo(markNo: string) {
+export async function getFinalInspectionByMarkNo(markNo: string, planningId?: string | number) {
   try {
-    // Option 1: If your backend supports query by mark_no
-    const { data } = await api.get(`/final-inspections?mark_no=${markNo}`);
-    return data.data?.[0] || null;
-    
-    // Option 2: Fetch all and filter client-side
-    // const inspections = await getFinalInspections();
-    // return inspections.find(inspection => inspection.mark_no === markNo) || null;
+    const { data } = await api.get('/final-inspections', {
+      params: {
+        mark_no: markNo,
+        ...(planningId ? { planning_id: planningId } : {})
+      }
+    });
+
+    if (Array.isArray(data)) {
+      return data[0] || null;
+    }
+
+    return data?.data?.[0] || null;
   } catch (error) {
     console.error('Error fetching final inspection by mark number:', error);
     throw error;

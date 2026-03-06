@@ -1,20 +1,18 @@
 <template>
   <ion-app>
-    <ion-router-outlet />
+    <Sidebar v-if="showMenu" />
+    <ion-router-outlet id="main-content" />
   </ion-app>
 </template>
 
 <script setup>
 import { IonApp, IonRouterOutlet } from '@ionic/vue';
-import { onMounted } from 'vue';
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import Sidebar from './components/Sidebar.vue';
 
-onMounted(() => {
-  // Ensure menu is enabled
-  const menuEl = document.querySelector('ion-menu');
-  if (menuEl) {
-    menuEl.disabled = false;
-  }
-});
+const route = useRoute();
+const showMenu = computed(() => Boolean(route.meta?.requiresAuth));
 </script>
 
 <style>

@@ -2,7 +2,7 @@
   <ion-header>
     <ion-toolbar>
       <ion-buttons slot="start">
-        <ion-menu-button auto-hide="false"></ion-menu-button>
+        <ion-menu-button auto-hide="false" menu="app-menu" @click="openMenu"></ion-menu-button>
       </ion-buttons>
 
       <ion-title>
@@ -28,7 +28,9 @@
 
 <script setup>
 import { IonHeader, IonToolbar, IonButton, IonButtons, IonIcon, IonTitle, IonMenuButton } from '@ionic/vue';
+import { onMounted } from 'vue';
 import { person, logOut } from 'ionicons/icons';
+import { menuController } from '@ionic/vue';
 import { useAppStore } from '../store';
 import { useRouter } from 'vue-router';
 
@@ -37,6 +39,14 @@ const router = useRouter();
 
 const personIcon = person;
 const logOutIcon = logOut;
+
+onMounted(async () => {
+  await menuController.enable(true, 'app-menu');
+});
+
+const openMenu = async () => {
+  await menuController.open('app-menu');
+};
 
 const handleLogout = () => {
   store.logout();

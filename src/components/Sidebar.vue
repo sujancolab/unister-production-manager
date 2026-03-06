@@ -1,5 +1,6 @@
 <template>
   <ion-menu 
+    menu-id="app-menu"
     content-id="main-content" 
     type="overlay"
     :class="{ 'menu-collapsed': store.sidebarCollapsed }"
