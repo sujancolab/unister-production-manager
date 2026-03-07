@@ -15,7 +15,7 @@
       <ion-buttons slot="end">
         <div class="user-info">
           <ion-icon :icon="personIcon"></ion-icon>
-          <span class="username">{{ store.loggedInUser.name }}</span>
+          <span class="username">{{ displayUserName }}</span>
         </div>
         <ion-button color="danger" @click="handleLogout">
           <ion-icon :icon="logOutIcon" slot="start"></ion-icon>
@@ -28,7 +28,7 @@
 
 <script setup>
 import { IonHeader, IonToolbar, IonButton, IonButtons, IonIcon, IonTitle, IonMenuButton } from '@ionic/vue';
-import { onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import { person, logOut } from 'ionicons/icons';
 import { menuController } from '@ionic/vue';
 import { useAppStore } from '../store';
@@ -39,6 +39,7 @@ const router = useRouter();
 
 const personIcon = person;
 const logOutIcon = logOut;
+const displayUserName = computed(() => store.loggedInUser?.name || 'User');
 
 onMounted(async () => {
   await menuController.enable(true, 'app-menu');

@@ -1,10 +1,24 @@
 import api from '@/services/api';
 import { defineStore } from 'pinia';
 
+const getStoredToken = () => localStorage.getItem('token');
+const getStoredUser = () => {
+  const rawUser = localStorage.getItem('loggedInUser');
+  if (!rawUser) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawUser);
+  } catch {
+    return null;
+  }
+};
+
 export const useAppStore = defineStore('app', {
   state: () => ({
-    loggedInUser: '',
-    token: null,
+    loggedInUser: getStoredUser(),
+    token: getStoredToken(),
     sidebarCollapsed: false,
     selectedClient: '',
     selectedProject: '',
@@ -27,6 +41,7 @@ export const useAppStore = defineStore('app', {
 
         // Save token in localStorage
         localStorage.setItem('token', token);
+        localStorage.setItem('loggedInUser', JSON.stringify(user));
 
         // Store in Pinia state
         this.loggedInUser = user;
@@ -46,6 +61,7 @@ export const useAppStore = defineStore('app', {
       this.token = null;
 
       localStorage.removeItem('token');
+      localStorage.removeItem('loggedInUser');
 
       this.selectedClient = '';
       this.selectedProject = '';
@@ -89,7 +105,7 @@ export const useAppStore = defineStore('app', {
   },
 
   getters: {
-    isAuthenticated: (state) => !!state.loggedInUser,
+    isAuthenticated: (state) => !!state.token,
     allSelectionsComplete: (state) => 
       state.selectedClient && 
       state.selectedProject && 

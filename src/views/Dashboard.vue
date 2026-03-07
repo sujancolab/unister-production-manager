@@ -14,7 +14,7 @@
         <ion-card>
           <ion-card-content>
             <p class="welcome-text">
-              Welcome back, <span class="username-highlight">{{ store.loggedInUser.name }}</span>!
+              Welcome back, <span class="username-highlight">{{ displayUserName }}</span>!
             </p>
             <p class="instruction-text">
               Click the menu icon (☰) at the top left to open the sidebar and select "Production Process" to get started.
@@ -28,10 +28,12 @@
 
 <script setup>
 import { IonPage, IonContent, IonCard, IonCardContent, IonHeader, IonToolbar, IonTitle } from '@ionic/vue';
+import { computed } from 'vue';
 import Header from '../components/Header.vue';
 import { useAppStore } from '../store';
 
 const store = useAppStore();
+const displayUserName = computed(() => store.loggedInUser?.name || 'User');
 </script>
 
 <style scoped>
