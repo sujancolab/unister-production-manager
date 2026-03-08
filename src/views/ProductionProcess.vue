@@ -168,18 +168,17 @@
                                         | Status: {{ record.status }}
                                     </div>
                                 </div>
-                                <ion-button size="small" fill="outline"
-                                    :disabled="record.status !== 'pending'"
+                                <ion-button size="small" fill="outline" :disabled="record.status !== 'pending'"
                                     @click="openProcessRecord(record)">
                                     {{ record.status === 'pending' ? 'Open' : 'Done' }}
                                 </ion-button>
                             </div>
                         </div>
 
-                        <ion-button expand="block" @click="handleMarkSelection"
+                        <!-- <ion-button expand="block" @click="handleMarkSelection"
                             :disabled="!allSelectionsComplete || selectionLoading.stages" class="mark-button">
                             {{ selectionLoading.stages ? 'Loading Stages...' : 'Show Selected Record Stages' }}
-                        </ion-button>
+                        </ion-button> -->
                     </ion-card-content>
                 </ion-card>
 
@@ -189,9 +188,9 @@
                         <ion-segment-button value="stages">
                             <ion-label>Stages</ion-label>
                         </ion-segment-button>
-                        <ion-segment-button value="inspection">
+                        <!-- <ion-segment-button value="inspection">
                             <ion-label>Final Inspection</ion-label>
-                        </ion-segment-button>
+                        </ion-segment-button> -->
                     </ion-segment>
 
                     <div v-if="activeTab === 'stages'">
@@ -495,7 +494,7 @@ const loadProcessRecords = async () => {
     }
     processRecordLoading.value = true;
     try {
-        const res = await api.get(`/process-records?planning_id=${selectedPlanning.value}&mark_no=${encodeURIComponent(selectedMarkNo.value)}`);
+        const res = await api.get(`process-records?planning_id=${selectedPlanning.value}&mark_no=${encodeURIComponent(selectedMarkNo.value)}`);
         processRecords.value = Array.isArray(res.data) ? res.data : [];
     } catch (error) {
         console.error('Error loading process records:', error);
@@ -512,7 +511,7 @@ const addProcessRecord = async () => {
     }
     processRecordLoading.value = true;
     try {
-        await api.post('/process-records', {
+        await api.post('process-records', {
             planning_id: selectedPlanning.value,
             mark_no: selectedMarkNo.value,
             contractor_id: selectedContractorId.value,
@@ -522,7 +521,13 @@ const addProcessRecord = async () => {
         await loadProcessRecords();
         alert('Process record created.');
     } catch (error) {
-        const msg = error?.response?.data?.message || 'Failed to create process record.';
+        console.error('Create process record error:', {
+            status: error?.response?.status,
+            data: error?.response?.data,
+            url: error?.config?.url,
+            baseURL: error?.config?.baseURL,
+        });
+        const msg = error?.response?.data?.message || `Failed to create process record. (${error?.response?.status || 'unknown'})`;
         alert(msg);
     } finally {
         processRecordLoading.value = false;
@@ -533,7 +538,7 @@ const openProcessRecord = async (record) => {
     selectedProcessRecordId.value = record.id;
     selectionLoading.stages = true;
     try {
-        const res = await api.get(`/process-records/${record.id}/stages`);
+        const res = await api.get(`process-records/${record.id}/stages`);
         const rows = Array.isArray(res.data?.stages) ? res.data.stages : [];
         stages.value = rows.map((el) => ({
             ...el,
@@ -651,7 +656,7 @@ const saveStages = async () => {
         console.log('FormData ready. Total files:', totalFiles);
         console.log('FormData entries:', Array.from(formData.entries()).map(([k, v]) => [k, v instanceof File ? `File: ${v.name}` : v]));
 
-        const res = await api.post(`/process-records/${selectedProcessRecordId.value}/save-stages`, formData);
+        const res = await api.post(`process-records/${selectedProcessRecordId.value}/save-stages`, formData);
 
         console.log("Save response:", res.data);
         alert("Stages saved successfully!");
