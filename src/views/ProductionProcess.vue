@@ -103,17 +103,82 @@
                                             </ion-select-option>
                                         </ion-select>
                                     </ion-item>
-                                    <div v-if="selectionLoading.markNos || selectionLoading.finalInspection" class="select-loader">
+                                    <div v-if="selectionLoading.markNos || selectionLoading.finalInspection"
+                                        class="select-loader">
                                         <ion-spinner name="crescent" />
-                                        <span>{{ selectionLoading.markNos ? 'Loading mark numbers...' : 'Loading inspection...' }}</span>
+                                        <span>{{ selectionLoading.markNos ? 'Loading mark numbers...' :
+                                            'Loading inspection...' }}</span>
                                     </div>
                                 </ion-col>
                             </ion-row>
                         </ion-grid>
 
-                        <ion-button expand="block" @click="handleMarkSelection" :disabled="!allSelectionsComplete || selectionLoading.stages"
-                            class="mark-button">
-                            {{ selectionLoading.stages ? 'Loading Stages...' : 'Mark & Show Stages' }}
+                        <div v-if="selectedMarkNo" class="allocation-panel">
+                            <h3 class="allocation-title">Allocate Quantity</h3>
+                            <ion-grid>
+                                <ion-row>
+                                    <ion-col size="12" size-md="5">
+                                        <ion-item>
+                                            <ion-label position="stacked">Contractor</ion-label>
+                                            <ion-select v-model="selectedContractorId" placeholder="Select Contractor"
+                                                :disabled="allocationLoading.contractors || contractors.length === 0">
+                                                <ion-select-option v-for="contractor in contractors"
+                                                    :key="contractor.id" :value="contractor.id">
+                                                    {{ contractor.name }}
+                                                </ion-select-option>
+                                            </ion-select>
+                                        </ion-item>
+                                    </ion-col>
+                                    <ion-col size="12" size-md="3">
+                                        <ion-item>
+                                            <ion-label position="stacked">Allocated Qty</ion-label>
+                                            <ion-input :value="selectedContractorAllocatedQty" readonly />
+                                        </ion-item>
+                                    </ion-col>
+                                    <ion-col size="12" size-md="3">
+                                        <ion-item>
+                                            <ion-label position="stacked">Process Qty</ion-label>
+                                            <ion-input v-model.number="processQuantity" type="number" min="1"
+                                                placeholder="Enter process qty" />
+                                        </ion-item>
+                                    </ion-col>
+                                    <ion-col size="12" size-md="1" class="d-flex align-items-end">
+                                        <ion-button expand="block" color="success" @click="addProcessRecord"
+                                            :disabled="!canAddProcessRecord || processRecordLoading">
+                                            Add
+                                        </ion-button>
+                                    </ion-col>
+                                </ion-row>
+                            </ion-grid>
+
+                            <div v-if="allocationError" class="allocation-error">{{ allocationError }}</div>
+                            <div class="allocation-summary">
+                                Remaining for contractor: <strong>{{ contractorRemainingQty }}</strong>
+                            </div>
+                        </div>
+
+                        <div v-if="selectedMarkNo && processRecords.length > 0" class="allocation-panel mt-2">
+                            <h3 class="allocation-title">Process Records</h3>
+                            <div v-for="record in processRecords" :key="`record-${record.id}`" class="process-list-row">
+                                <div>
+                                    <strong>{{ record.contractor?.name || '-' }}</strong>
+                                    <div class="small-muted">
+                                        Allocated: {{ record.allocated_quantity || 0 }}
+                                        | Process Qty: {{ record.process_quantity || 0 }}
+                                        | Status: {{ record.status }}
+                                    </div>
+                                </div>
+                                <ion-button size="small" fill="outline"
+                                    :disabled="record.status !== 'pending'"
+                                    @click="openProcessRecord(record)">
+                                    {{ record.status === 'pending' ? 'Open' : 'Done' }}
+                                </ion-button>
+                            </div>
+                        </div>
+
+                        <ion-button expand="block" @click="handleMarkSelection"
+                            :disabled="!allSelectionsComplete || selectionLoading.stages" class="mark-button">
+                            {{ selectionLoading.stages ? 'Loading Stages...' : 'Show Selected Record Stages' }}
                         </ion-button>
                     </ion-card-content>
                 </ion-card>
@@ -145,15 +210,18 @@
                             <ion-card-content>
                                 <div v-if="finalInspection">
                                     <ion-label>
-                                        <strong>Status:</strong> <span :class="statusClass(finalInspection.status)">{{ finalInspection.status }}</span><br>
+                                        <strong>Status:</strong> <span :class="statusClass(finalInspection.status)">{{
+                                            finalInspection.status }}</span><br>
                                         <strong>Mark No:</strong> {{ finalInspection.mark_no }}<br>
                                         <strong>Created:</strong> {{ formatDate(finalInspection.created_at) }}
                                     </ion-label>
-                                    <ion-button expand="block" color="primary" @click="viewFinalInspection(finalInspection)">View</ion-button>
+                                    <ion-button expand="block" color="primary"
+                                        @click="viewFinalInspection(finalInspection)">View</ion-button>
                                 </div>
                                 <div v-else>
                                     <ion-label>No final inspection found for this mark.</ion-label>
-                                    <ion-button expand="block" color="success" @click="createFinalInspection">Create</ion-button>
+                                    <ion-button expand="block" color="success"
+                                        @click="createFinalInspection">Create</ion-button>
                                 </div>
                             </ion-card-content>
                         </ion-card>
@@ -189,7 +257,8 @@ import {
     IonIcon,
     IonSegment,
     IonSegmentButton,
-    IonSpinner
+    IonSpinner,
+    IonInput
 } from '@ionic/vue';
 import { arrowBack } from 'ionicons/icons';
 import Header from '../components/Header.vue';
@@ -208,12 +277,24 @@ const boms = ref(['BOM-001', 'BOM-002', 'BOM-003']);
 const plannings = ref(['Planning Q1', 'Planning Q2', 'Planning Q3']);
 const planningMarkNos = ref([]);
 const stages = ref([]);
+const contractors = ref([]);
+const markStagesForAllocation = ref([]);
+const allocations = ref([]);
 
 const selectedClient = ref('');
 const selectedProject = ref('');
 const selectedBOM = ref('');
 const selectedPlanning = ref('');
 const selectedMarkNo = ref('');
+const selectedContractorId = ref(null);
+const processQuantity = ref(null);
+const selectedProcessRecordId = ref(null);
+const processRecords = ref([]);
+const processRecordLoading = ref(false);
+const allocationTotalMarkQuantity = ref(0);
+const allocationTotalAllocated = ref(0);
+const allocationRemaining = ref(0);
+const allocationError = ref('');
 const selectionLoading = reactive({
     clients: false,
     projects: false,
@@ -223,9 +304,42 @@ const selectionLoading = reactive({
     finalInspection: false,
     stages: false
 });
+const allocationLoading = reactive({
+    contractors: false,
+    allocations: false,
+});
 
 const activeTab = ref('stages');
 const finalInspection = ref(null);
+
+const allocationStage = computed(() => {
+    const source = markStagesForAllocation.value.length ? markStagesForAllocation.value : stages.value;
+    return source.find((s) => s.type === 'stage') || source[0] || null;
+});
+
+const selectedContractorAllocatedQty = computed(() => {
+    if (!selectedContractorId.value) return 0;
+    return allocations.value
+        .filter((a) => Number(a?.contractor_id) === Number(selectedContractorId.value))
+        .reduce((sum, a) => sum + Number(a?.allocated_quantity || 0), 0);
+});
+
+const contractorProcessedQty = computed(() => {
+    if (!selectedContractorId.value) return 0;
+    return processRecords.value
+        .filter((r) => Number(r?.contractor_id) === Number(selectedContractorId.value))
+        .reduce((sum, r) => sum + Number(r?.process_quantity || 0), 0);
+});
+
+const contractorRemainingQty = computed(() => {
+    return Math.max(0, Number(selectedContractorAllocatedQty.value || 0) - Number(contractorProcessedQty.value || 0));
+});
+
+const canAddProcessRecord = computed(() => {
+    return !!selectedContractorId.value
+        && Number(processQuantity.value || 0) > 0
+        && Number(processQuantity.value || 0) <= Number(contractorRemainingQty.value || 0);
+});
 
 // Fetch Clients from API
 const loadClients = async () => {
@@ -298,17 +412,17 @@ const loadStages = async () => {
     try {
         const res = await api.get(`/getStages?planning_id=${selectedPlanning.value}&mark_no=${selectedMarkNo.value}`);
         stages.value = res.data;
-        
+
         // Map stages with completed and rejected status
         stages.value = stages.value.map(el => ({
             ...el,
             completed: el.stage_completed_date !== null,
             rejected: el.stage_rejected_date !== null,
-            status: el.stage_rejected_date !== null 
-                ? 'rejected' 
-                : el.stage_completed_date !== null 
-                ? 'completed' 
-                : 'pending'
+            status: el.stage_rejected_date !== null
+                ? 'rejected'
+                : el.stage_completed_date !== null
+                    ? 'completed'
+                    : 'pending'
         }));
 
         console.log("stages", stages.value);
@@ -318,6 +432,127 @@ const loadStages = async () => {
         selectionLoading.stages = false;
     }
 }
+
+const loadAllocationContext = async () => {
+    allocationError.value = '';
+    allocations.value = [];
+    allocationTotalMarkQuantity.value = 0;
+    allocationTotalAllocated.value = 0;
+    allocationRemaining.value = 0;
+    selectedContractorId.value = null;
+
+    if (!selectedPlanning.value || !selectedMarkNo.value) {
+        markStagesForAllocation.value = [];
+        return;
+    }
+
+    allocationLoading.allocations = true;
+    try {
+        const stageRes = await api.get(`/getStages?planning_id=${selectedPlanning.value}&mark_no=${selectedMarkNo.value}`);
+        markStagesForAllocation.value = Array.isArray(stageRes.data) ? stageRes.data : [];
+
+        const stageId = allocationStage.value?.id;
+        if (!stageId) return;
+
+        const allocRes = await api.get(`/stage-quantity-allocations/${stageId}`);
+        if (allocRes.data?.success) {
+            allocations.value = allocRes.data.data || [];
+            allocationTotalMarkQuantity.value = Number(allocRes.data.total_mark_quantity || 0);
+            allocationTotalAllocated.value = Number(allocRes.data.total_allocated || 0);
+            allocationRemaining.value = Number(allocRes.data.remaining || 0);
+
+            const contractorMap = new Map();
+            allocations.value.forEach((allocation) => {
+                if (allocation?.contractor_id) {
+                    const contractorId = Number(allocation.contractor_id);
+                    contractorMap.set(contractorId, {
+                        id: contractorId,
+                        name: allocation?.contractor?.name || `Contractor ${contractorId}`
+                    });
+                }
+            });
+            contractors.value = Array.from(contractorMap.values());
+
+            if (contractors.value.length === 0) {
+                selectedContractorId.value = null;
+                allocationError.value = 'No contractor found from stage quantity allocation for this mark.';
+            } else if (!contractors.value.some((c) => Number(c.id) === Number(selectedContractorId.value))) {
+                selectedContractorId.value = contractors.value[0].id;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading allocation context:', error);
+        allocationError.value = 'Unable to load allocation data for selected mark.';
+    } finally {
+        allocationLoading.allocations = false;
+    }
+};
+
+const loadProcessRecords = async () => {
+    if (!selectedPlanning.value || !selectedMarkNo.value) {
+        processRecords.value = [];
+        return;
+    }
+    processRecordLoading.value = true;
+    try {
+        const res = await api.get(`/process-records?planning_id=${selectedPlanning.value}&mark_no=${encodeURIComponent(selectedMarkNo.value)}`);
+        processRecords.value = Array.isArray(res.data) ? res.data : [];
+    } catch (error) {
+        console.error('Error loading process records:', error);
+        processRecords.value = [];
+    } finally {
+        processRecordLoading.value = false;
+    }
+};
+
+const addProcessRecord = async () => {
+    if (!canAddProcessRecord.value) {
+        alert('Process quantity exceeds remaining available quantity for selected contractor.');
+        return;
+    }
+    processRecordLoading.value = true;
+    try {
+        await api.post('/process-records', {
+            planning_id: selectedPlanning.value,
+            mark_no: selectedMarkNo.value,
+            contractor_id: selectedContractorId.value,
+            process_quantity: Number(processQuantity.value),
+        });
+        processQuantity.value = null;
+        await loadProcessRecords();
+        alert('Process record created.');
+    } catch (error) {
+        const msg = error?.response?.data?.message || 'Failed to create process record.';
+        alert(msg);
+    } finally {
+        processRecordLoading.value = false;
+    }
+};
+
+const openProcessRecord = async (record) => {
+    selectedProcessRecordId.value = record.id;
+    selectionLoading.stages = true;
+    try {
+        const res = await api.get(`/process-records/${record.id}/stages`);
+        const rows = Array.isArray(res.data?.stages) ? res.data.stages : [];
+        stages.value = rows.map((el) => ({
+            ...el,
+            completed: el.stage_completed_date !== null,
+            rejected: el.stage_rejected_date !== null,
+            status: el.stage_rejected_date !== null
+                ? 'rejected'
+                : el.stage_completed_date !== null
+                    ? 'completed'
+                    : 'pending'
+        }));
+        activeTab.value = 'stages';
+    } catch (error) {
+        console.error('Error opening process record stages:', error);
+        alert('Failed to load process record stages.');
+    } finally {
+        selectionLoading.stages = false;
+    }
+};
 
 const fetchFinalInspection = async () => {
     if (!selectedMarkNo.value || !selectedPlanning.value) return;
@@ -339,13 +574,15 @@ const viewFinalInspection = (inspection) => {
 };
 
 const createFinalInspection = () => {
-    router.push({ name: 'FinalInspectionCreate', query: {
-        mark_no: selectedMarkNo.value,
-        project_id: selectedProject.value,
-        planning_id: selectedPlanning.value,
-        bom_id: selectedBOM.value,
-        client_id: selectedClient.value
-    }});
+    router.push({
+        name: 'FinalInspectionCreate', query: {
+            mark_no: selectedMarkNo.value,
+            project_id: selectedProject.value,
+            planning_id: selectedPlanning.value,
+            bom_id: selectedBOM.value,
+            client_id: selectedClient.value
+        }
+    });
 };
 
 const statusClass = (status) => {
@@ -360,13 +597,18 @@ const formatDate = (date) => {
 
 const saveStages = async () => {
     try {
+        if (!selectedProcessRecordId.value) {
+            alert('Please open a process record from list first.');
+            return;
+        }
+
         const formData = new FormData();
         formData.append('planning_id', selectedPlanning.value);
         formData.append('mark_no', selectedMarkNo.value);
 
         let fileCounter = 0;
         let totalFiles = 0;
-        
+
         // Process each stage
         stages.value.forEach((stage, index) => {
             formData.append(`stages[${index}][id]`, stage.id);
@@ -386,7 +628,7 @@ const saveStages = async () => {
                             size: fileObj.file.size,
                             stage_id: stage.id
                         });
-                        
+
                         // Use a simple flat key structure
                         formData.append(
                             `files[${fileCounter}][file]`,
@@ -409,12 +651,16 @@ const saveStages = async () => {
         console.log('FormData ready. Total files:', totalFiles);
         console.log('FormData entries:', Array.from(formData.entries()).map(([k, v]) => [k, v instanceof File ? `File: ${v.name}` : v]));
 
-        const res = await api.post('/saveStages', formData);
+        const res = await api.post(`/process-records/${selectedProcessRecordId.value}/save-stages`, formData);
 
         console.log("Save response:", res.data);
         alert("Stages saved successfully!");
         // Reload stages to see updated data
-        loadStages();
+        const currentRecord = processRecords.value.find((r) => Number(r.id) === Number(selectedProcessRecordId.value));
+        if (currentRecord) {
+            await openProcessRecord(currentRecord);
+        }
+        await loadProcessRecords();
     } catch (error) {
         console.error("Error saving stages:", error);
         alert("Something went wrong while saving!");
@@ -437,7 +683,15 @@ const handleMarkSelection = () => {
             selectedBOM.value,
             selectedPlanning.value
         );
-        loadStages()
+        if (selectedProcessRecordId.value) {
+            const currentRecord = processRecords.value.find((r) => Number(r.id) === Number(selectedProcessRecordId.value));
+            if (currentRecord) {
+                openProcessRecord(currentRecord);
+                return;
+            }
+        }
+        stages.value = [];
+        alert('Select a process record from list to edit stages.');
     }
 };
 
@@ -485,6 +739,13 @@ watch(selectedPlanning, (newVal) => {
         planningMarkNos.value = [];
         loadMarknos(newVal);
     }
+});
+
+watch(selectedMarkNo, () => {
+    selectedProcessRecordId.value = null;
+    stages.value = [];
+    loadAllocationContext();
+    loadProcessRecords();
 });
 
 // Load Clients on Page Load
@@ -572,5 +833,65 @@ ion-card {
     padding: 4px 8px 0;
     color: #6b7280;
     font-size: 13px;
+}
+
+.allocation-panel {
+    margin-top: 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 14px 12px 10px;
+    background: #fafafa;
+}
+
+.allocation-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 8px;
+}
+
+.allocation-summary {
+    margin-top: 8px;
+    color: #374151;
+    font-size: 14px;
+}
+
+.allocation-error {
+    margin-top: 8px;
+    color: #b91c1c;
+    font-size: 13px;
+}
+
+.process-list-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+}
+
+.small-muted {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.badge-done {
+    background: #dcfce7;
+    color: #166534;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-pending {
+    background: #fef3c7;
+    color: #92400e;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
 }
 </style>

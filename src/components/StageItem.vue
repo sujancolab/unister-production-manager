@@ -29,16 +29,6 @@
                         <ion-icon slot="start" :icon="checkmarkCircle"></ion-icon>
                         Complete
                     </ion-button>
-                    <ion-button 
-                        v-if="stage.rejected || stage.completed"
-                        fill="outline" 
-                        color="medium" 
-                        size="small"
-                        @click="handleReset"
-                    >
-                        <ion-icon slot="start" :icon="refresh"></ion-icon>
-                        Reset
-                    </ion-button>
                 </div>
             </div>
 
@@ -177,7 +167,6 @@ import {
 import { 
     checkmarkCircle, 
     closeCircle, 
-    refresh, 
     person, 
     document, 
     alertCircle 
@@ -237,22 +226,6 @@ const handleComplete = () => {
     showNoteInput.value = true;
     noteText.value = '';
     selectedFiles.value = [];
-};
-
-const handleReset = () => {
-    const updatedStage = {
-        ...props.stage,
-        completed: false,
-        rejected: false,
-        status: 'pending',
-        stage_completed_date: null,
-        stage_rejected_date: null,
-        completion_notes: null,
-        rejection_reason: null,
-        completed_by: null,
-        rejected_by: null
-    };
-    emit('updateStage', updatedStage);
 };
 
 const cancelNote = () => {
