@@ -163,6 +163,8 @@
                                 <div>
                                     <strong>{{ record.contractor?.name || '-' }}</strong>
                                     <div class="small-muted">
+                                        Mark No: {{ record.mark_no || selectedMarkNo || '-' }}
+                                        |
                                         Allocated: {{ record.allocated_quantity || 0 }}
                                         | Process Qty: {{ record.process_quantity || 0 }}
                                         | Status: {{ record.status }}
@@ -194,7 +196,7 @@
                     </ion-segment>
 
                     <div v-if="activeTab === 'stages'">
-                        <h2>Production Stages</h2>
+                        <h2>Production Stages <span v-if="currentStageMarkNo" class="section-mark-no">| Mark No: {{ currentStageMarkNo }}</span></h2>
                         <StageItem v-for="stage in stages" :key="stage.id" :stage="stage" @updateStage="updateStage" />
                         <div v-if="stages.length > 0" class="save-btn-wrapper">
                             <ion-button expand="block" color="success" @click="saveStages">
@@ -338,6 +340,15 @@ const canAddProcessRecord = computed(() => {
     return !!selectedContractorId.value
         && Number(processQuantity.value || 0) > 0
         && Number(processQuantity.value || 0) <= Number(contractorRemainingQty.value || 0);
+});
+
+const currentStageMarkNo = computed(() => {
+    if (selectedProcessRecordId.value) {
+        const currentRecord = processRecords.value.find((r) => Number(r.id) === Number(selectedProcessRecordId.value));
+        return currentRecord?.mark_no || selectedMarkNo.value || '';
+    }
+
+    return selectedMarkNo.value || '';
 });
 
 // Fetch Clients from API
@@ -798,6 +809,12 @@ h2 {
     font-weight: 600;
     color: #1f2937;
     margin: 24px 0 16px;
+}
+
+.section-mark-no {
+    font-size: 16px;
+    font-weight: 500;
+    color: #6b7280;
 }
 
 ion-card {

@@ -8,7 +8,7 @@
       <ion-title>
         <div class="logo-container">
           <div class="logo-circle">P</div>
-          <span class="company-name">Production Co.</span>
+          <span class="company-name">{{ companyName }}</span>
         </div>
       </ion-title>
 
@@ -33,6 +33,7 @@ import { person, logOut } from 'ionicons/icons';
 import { menuController } from '@ionic/vue';
 import { useAppStore } from '../store';
 import { useRouter } from 'vue-router';
+import { API_SOURCES } from '@/services/api';
 
 const store = useAppStore();
 const router = useRouter();
@@ -40,6 +41,7 @@ const router = useRouter();
 const personIcon = person;
 const logOutIcon = logOut;
 const displayUserName = computed(() => store.loggedInUser?.name || 'User');
+const companyName = computed(() => `Unistar ${API_SOURCES[store.selectedSource]?.label || 'Amta'}`);
 
 onMounted(async () => {
   await menuController.enable(true, 'app-menu');
