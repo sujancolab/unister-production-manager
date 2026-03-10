@@ -421,7 +421,9 @@ const loadStages = async () => {
     selectionLoading.stages = true;
     try {
         const res = await api.get(`/getStages?planning_id=${selectedPlanning.value}&mark_no=${selectedMarkNo.value}`);
-        stages.value = res.data;
+        const rawStages = Array.isArray(res.data) ? res.data : [];
+        // Only show production stages (exclude inspection rows)
+        stages.value = rawStages.filter((el) => el?.type !== 'inspection');
 
         // Map stages with completed and rejected status
         stages.value = stages.value.map(el => ({
@@ -551,7 +553,8 @@ const openProcessRecord = async (record) => {
     try {
         const res = await api.get(`process-records/${record.id}/stages`);
         const rows = Array.isArray(res.data?.stages) ? res.data.stages : [];
-        stages.value = rows.map((el) => ({
+        const stageRows = rows.filter((el) => el?.type !== 'inspection');
+        stages.value = stageRows.map((el) => ({
             ...el,
             completed: el.stage_completed_date !== null,
             rejected: el.stage_rejected_date !== null,
