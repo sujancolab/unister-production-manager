@@ -1,24 +1,15 @@
 <template>
     <ion-page>
-        <ion-content class="ion-padding">
+        <ion-content class="">
             <div class="login-container">
                 <ion-card class="login-card">
                     <ion-card-content>
                         <div class="logo-section">
-                            <div class="logo-circle-large">P</div>
-                            <h1>Production Manager</h1>
+                            <h2  class="ion-padding">Production Management</h2>
                             <p>Sign in to continue</p>
                         </div>
 
                         <ion-list>
-                            <ion-item>
-                                <ion-label position="stacked">Source</ion-label>
-                                <ion-select v-model="selectedSource" interface="popover" placeholder="Select source">
-                                    <ion-select-option value="amta">Amta</ion-select-option>
-                                    <ion-select-option value="deora">Deora</ion-select-option>
-                                </ion-select>
-                            </ion-item>
-
                             <ion-item>
                                 <ion-label position="stacked">Username</ion-label>
                                 <ion-input v-model="username" type="text" placeholder="Enter username"></ion-input>
@@ -35,12 +26,6 @@
                             class="login-button">
                             Login
                         </ion-button>
-
-                        <p class="source-url">
-                            API: {{ selectedSource === 'amta'
-                                ? 'https://amta-production.tech-trico.com/api'
-                                : 'https://deora-production.tech-trico.com/api' }}
-                        </p>
                     </ion-card-content>
                 </ion-card>
             </div>
@@ -50,7 +35,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import { IonPage, IonContent, IonCard, IonCardContent, IonList, IonItem, IonLabel, IonInput, IonButton, IonSelect, IonSelectOption } from '@ionic/vue';
+import { IonPage, IonContent, IonCard, IonCardContent, IonList, IonItem, IonLabel, IonInput, IonButton } from '@ionic/vue';
 import { useRouter } from 'vue-router';
 import { toastController } from '@ionic/vue';
 import { useAppStore } from '../store';
@@ -58,13 +43,12 @@ import { useAppStore } from '../store';
 const router = useRouter();
 const store = useAppStore();
 
-const selectedSource = ref(store.selectedSource || 'amta');
 const username = ref('');
 const password = ref('');
 
 const handleLogin = async () => {
     if (username.value && password.value) {
-        const result = await store.login(selectedSource.value, username.value, password.value);
+        const result = await store.login(username.value, password.value);
 
         if (!result.success) {
             const toast = await toastController.create({
@@ -143,12 +127,5 @@ ion-list {
     margin-top: 24px;
     --background: #4f46e5;
     font-weight: 600;
-}
-
-.source-url {
-    margin-top: 16px;
-    font-size: 12px;
-    text-align: center;
-    word-break: break-word;
 }
 </style>

@@ -1,4 +1,4 @@
-import api, { getStoredApiSource, setApiSource, type ApiSourceKey } from '@/services/api';
+import api from '@/services/api';
 import { defineStore } from 'pinia';
 
 const getStoredToken = () => localStorage.getItem('token');
@@ -19,7 +19,6 @@ export const useAppStore = defineStore('app', {
   state: () => ({
     loggedInUser: getStoredUser(),
     token: getStoredToken(),
-    selectedSource: getStoredApiSource(),
     sidebarCollapsed: false,
     selectedClient: '',
     selectedProject: '',
@@ -30,18 +29,8 @@ export const useAppStore = defineStore('app', {
   }),
 
   actions: {
-    async login(source: ApiSourceKey, username: string, password: string) {
+    async login(username: string, password: string) {
       try {
-        if (this.selectedSource !== source) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('loggedInUser');
-          this.loggedInUser = null;
-          this.token = null;
-        }
-
-        setApiSource(source);
-        this.selectedSource = source;
-
         const response = await api.post('/login', {
           username,
           password
@@ -65,18 +54,6 @@ export const useAppStore = defineStore('app', {
           message: error.response?.data?.message || "Login failed" 
         };
       }
-    },
-
-    setSelectedSource(source: ApiSourceKey) {
-      if (this.selectedSource !== source) {
-        this.loggedInUser = null;
-        this.token = null;
-        localStorage.removeItem('token');
-        localStorage.removeItem('loggedInUser');
-      }
-
-      setApiSource(source);
-      this.selectedSource = source;
     },
 
     logout() {

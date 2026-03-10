@@ -1,14 +1,22 @@
 <template>
-  <ion-header>
-    <ion-toolbar>
+  <ion-header mode="md">
+    <ion-toolbar mode="md">
       <ion-buttons slot="start">
-        <ion-menu-button auto-hide="false" menu="app-menu" @click="openMenu"></ion-menu-button>
+        <ion-menu-button
+          auto-hide="false"
+          menu="app-menu"
+          @click="openMenu"
+        ></ion-menu-button>
+        
+        <!-- <ion-button @click="goBack" fill="clear">
+          <ion-icon :icon="backIcon" color="dark"></ion-icon>
+        </ion-button> -->
       </ion-buttons>
 
       <ion-title>
         <div class="logo-container">
-          <div class="logo-circle">P</div>
-          <span class="company-name">{{ companyName }}</span>
+          <div>Unistar</div>
+          <span class="company-name">Production Co.</span>
         </div>
       </ion-title>
 
@@ -33,7 +41,6 @@ import { person, logOut } from 'ionicons/icons';
 import { menuController } from '@ionic/vue';
 import { useAppStore } from '../store';
 import { useRouter } from 'vue-router';
-import { API_SOURCES } from '@/services/api';
 
 const store = useAppStore();
 const router = useRouter();
@@ -41,7 +48,6 @@ const router = useRouter();
 const personIcon = person;
 const logOutIcon = logOut;
 const displayUserName = computed(() => store.loggedInUser?.name || 'User');
-const companyName = computed(() => `Unistar ${API_SOURCES[store.selectedSource]?.label || 'Amta'}`);
 
 onMounted(async () => {
   await menuController.enable(true, 'app-menu');
@@ -75,8 +81,7 @@ ion-menu-button {
 }
 
 .logo-circle {
-  width: 40px;
-  height: 40px;
+
   background-color: #4f46e5;
   border-radius: 8px;
   display: flex;

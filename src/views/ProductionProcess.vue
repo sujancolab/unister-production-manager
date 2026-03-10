@@ -1,202 +1,187 @@
 <template>
     <ion-page>
-        <Header />
+        <Header :showBack="true" />
 
         <ion-content class="ion-padding" :fullscreen="true">
-            <ion-header collapse="condense">
+            <!-- <ion-header collapse="condense">
                 <ion-toolbar>
                     <ion-title size="large">Production Process</ion-title>
                 </ion-toolbar>
-            </ion-header>
+            </ion-header> -->
 
             <div class="production-container">
-                <div class="page-header">
-                    <ion-button fill="clear" color="medium" @click="goToDashboard" class="back-button">
-                        <ion-icon slot="start" :icon="arrowBack"></ion-icon>
-                        Back to Dashboard
-                    </ion-button>
-                    <h1>Production Process</h1>
+                <!-- <ion-button fill="clear" color="medium" @click="goToDashboard">
+                    <ion-icon  :icon="arrowBack"></ion-icon>
+                    &nbsp;&nbsp;&nbsp;Production Process
+                </ion-button> -->
+
+                <!-- <h2>Production Process</h2> -->
+                <div class="allocation-panel">
+                    <h3 class="allocation-title">Production Process</h3>
+                <!-- Selection Form -->
+
+                    <ion-row>
+                        <ion-col size="12" size-md="6">
+                            <ion-item>
+                                <ion-label position="stacked">Client</ion-label>
+                                <ion-select v-model="selectedClient" placeholder="Select Client"
+                                    :disabled="selectionLoading.clients">
+                                    <ion-select-option v-for="client in clients" :key="client"
+                                        :value="client.id">
+                                        {{ client.name }}
+                                    </ion-select-option>
+                                </ion-select>
+                            </ion-item>
+                            <div v-if="selectionLoading.clients" class="select-loader">
+                                <ion-spinner name="crescent" />
+                                <span>Loading clients...</span>
+                            </div>
+                        </ion-col>
+
+                        <ion-col size="12" size-md="6">
+                            <ion-item>
+                                <ion-label position="stacked">Project</ion-label>
+                                <ion-select v-model="selectedProject" placeholder="Select Project"
+                                    :disabled="selectionLoading.projects || !selectedClient">
+                                    <ion-select-option v-for="project in projects" :key="project"
+                                        :value="project.id">
+                                        {{ project.project_id }}
+                                    </ion-select-option>
+                                </ion-select>
+                            </ion-item>
+                            <div v-if="selectionLoading.projects" class="select-loader">
+                                <ion-spinner name="crescent" />
+                                <span>Loading projects...</span>
+                            </div>
+                        </ion-col>
+
+                        <ion-col size="12" size-md="6">
+                            <ion-item>
+                                <ion-label position="stacked">BOM</ion-label>
+                                <ion-select v-model="selectedBOM" placeholder="Select BOM"
+                                    :disabled="selectionLoading.boms || !selectedProject">
+                                    <ion-select-option v-for="bom in boms" :key="bom" :value="bom.id">
+                                        {{ bom.bom_number }}
+                                    </ion-select-option>
+                                </ion-select>
+                            </ion-item>
+                            <div v-if="selectionLoading.boms" class="select-loader">
+                                <ion-spinner name="crescent" />
+                                <span>Loading BOMs...</span>
+                            </div>
+                        </ion-col>
+
+                        <ion-col size="12" size-md="6">
+                            <ion-item>
+                                <ion-label position="stacked">Production Planning</ion-label>
+                                <ion-select v-model="selectedPlanning" placeholder="Select Planning"
+                                    :disabled="selectionLoading.plannings || !selectedBOM">
+                                    <ion-select-option v-for="planning in plannings" :key="planning"
+                                        :value="planning.id">
+                                        {{ planning.production_planning_number }}
+                                    </ion-select-option>
+                                </ion-select>
+                            </ion-item>
+                            <div v-if="selectionLoading.plannings" class="select-loader">
+                                <ion-spinner name="crescent" />
+                                <span>Loading planning...</span>
+                            </div>
+                        </ion-col>
+                        <ion-col size="12" size-md="6">
+                            <ion-item>
+                                <ion-label position="stacked">Mark No</ion-label>
+                                <ion-select v-model="selectedMarkNo" placeholder="Select Mark No"
+                                    :disabled="selectionLoading.markNos || !selectedPlanning">
+                                    <ion-select-option v-for="planningmarkno in planningMarkNos"
+                                        :key="planningmarkno" :value="planningmarkno">
+                                        {{ planningmarkno }}
+                                    </ion-select-option>
+                                </ion-select>
+                            </ion-item>
+                            <div v-if="selectionLoading.markNos || selectionLoading.finalInspection"
+                                class="select-loader">
+                                <ion-spinner name="crescent" />
+                                <span>{{ selectionLoading.markNos ? 'Loading mark numbers...' :
+                                    'Loading inspection...' }}</span>
+                            </div>
+                        </ion-col>
+                    </ion-row>
+
+                </div>
+                <div v-if="selectedMarkNo" class="allocation-panel">
+                    <h3 class="allocation-title">Allocate Quantity</h3>
+                    <ion-grid>
+                        <ion-row>
+                            <ion-col size="12" size-md="5">
+                                <ion-item>
+                                    <ion-label position="stacked">Contractor</ion-label>
+                                    <ion-select v-model="selectedContractorId" placeholder="Select Contractor"
+                                        :disabled="allocationLoading.contractors || contractors.length === 0">
+                                        <ion-select-option v-for="contractor in contractors"
+                                            :key="contractor.id" :value="contractor.id">
+                                            {{ contractor.name }}
+                                        </ion-select-option>
+                                    </ion-select>
+                                </ion-item>
+                            </ion-col>
+                            <ion-col size="12" size-md="3">
+                                <ion-item>
+                                    <ion-label position="stacked">Allocated Qty</ion-label>
+                                    <ion-input :value="selectedContractorAllocatedQty" readonly />
+                                </ion-item>
+                            </ion-col>
+                            <ion-col size="12" size-md="3">
+                                <ion-item>
+                                    <ion-label position="stacked">Process Qty</ion-label>
+                                    <ion-input v-model.number="processQuantity" type="number" min="1"
+                                        placeholder="Enter process qty" />
+                                </ion-item>
+                            </ion-col>
+                            <ion-col size="12" size-md="1" class="d-flex align-items-end">
+                                <ion-button expand="block" color="success" @click="addProcessRecord"
+                                    :disabled="!canAddProcessRecord || processRecordLoading">
+                                    Add
+                                </ion-button>
+                            </ion-col>
+                        </ion-row>
+                    </ion-grid>
+
+                    <div v-if="allocationError" class="allocation-error">{{ allocationError }}</div>
+                    <div class="allocation-summary">
+                        Remaining for contractor: <strong>{{ contractorRemainingQty }}</strong>
+                    </div>
                 </div>
 
-                <!-- Selection Form -->
-                <ion-card>
-                    <ion-card-header>
-                        <ion-card-title>Select Details</ion-card-title>
-                    </ion-card-header>
-                    <ion-card-content>
-                        <ion-grid>
-                            <ion-row>
-                                <ion-col size="12" size-md="6">
-                                    <ion-item>
-                                        <ion-label position="stacked">Client</ion-label>
-                                        <ion-select v-model="selectedClient" placeholder="Select Client"
-                                            :disabled="selectionLoading.clients">
-                                            <ion-select-option v-for="client in clients" :key="client"
-                                                :value="client.id">
-                                                {{ client.name }}
-                                            </ion-select-option>
-                                        </ion-select>
-                                    </ion-item>
-                                    <div v-if="selectionLoading.clients" class="select-loader">
-                                        <ion-spinner name="crescent" />
-                                        <span>Loading clients...</span>
-                                    </div>
-                                </ion-col>
-
-                                <ion-col size="12" size-md="6">
-                                    <ion-item>
-                                        <ion-label position="stacked">Project</ion-label>
-                                        <ion-select v-model="selectedProject" placeholder="Select Project"
-                                            :disabled="selectionLoading.projects || !selectedClient">
-                                            <ion-select-option v-for="project in projects" :key="project"
-                                                :value="project.id">
-                                                {{ project.project_id }}
-                                            </ion-select-option>
-                                        </ion-select>
-                                    </ion-item>
-                                    <div v-if="selectionLoading.projects" class="select-loader">
-                                        <ion-spinner name="crescent" />
-                                        <span>Loading projects...</span>
-                                    </div>
-                                </ion-col>
-
-                                <ion-col size="12" size-md="6">
-                                    <ion-item>
-                                        <ion-label position="stacked">BOM</ion-label>
-                                        <ion-select v-model="selectedBOM" placeholder="Select BOM"
-                                            :disabled="selectionLoading.boms || !selectedProject">
-                                            <ion-select-option v-for="bom in boms" :key="bom" :value="bom.id">
-                                                {{ bom.bom_number }}
-                                            </ion-select-option>
-                                        </ion-select>
-                                    </ion-item>
-                                    <div v-if="selectionLoading.boms" class="select-loader">
-                                        <ion-spinner name="crescent" />
-                                        <span>Loading BOMs...</span>
-                                    </div>
-                                </ion-col>
-
-                                <ion-col size="12" size-md="6">
-                                    <ion-item>
-                                        <ion-label position="stacked">Production Planning</ion-label>
-                                        <ion-select v-model="selectedPlanning" placeholder="Select Planning"
-                                            :disabled="selectionLoading.plannings || !selectedBOM">
-                                            <ion-select-option v-for="planning in plannings" :key="planning"
-                                                :value="planning.id">
-                                                {{ planning.production_planning_number }}
-                                            </ion-select-option>
-                                        </ion-select>
-                                    </ion-item>
-                                    <div v-if="selectionLoading.plannings" class="select-loader">
-                                        <ion-spinner name="crescent" />
-                                        <span>Loading planning...</span>
-                                    </div>
-                                </ion-col>
-                                <ion-col size="12" size-md="6">
-                                    <ion-item>
-                                        <ion-label position="stacked">Mark No</ion-label>
-                                        <ion-select v-model="selectedMarkNo" placeholder="Select Mark No"
-                                            :disabled="selectionLoading.markNos || !selectedPlanning">
-                                            <ion-select-option v-for="planningmarkno in planningMarkNos"
-                                                :key="planningmarkno" :value="planningmarkno">
-                                                {{ planningmarkno }}
-                                            </ion-select-option>
-                                        </ion-select>
-                                    </ion-item>
-                                    <div v-if="selectionLoading.markNos || selectionLoading.finalInspection"
-                                        class="select-loader">
-                                        <ion-spinner name="crescent" />
-                                        <span>{{ selectionLoading.markNos ? 'Loading mark numbers...' :
-                                            'Loading inspection...' }}</span>
-                                    </div>
-                                </ion-col>
-                            </ion-row>
-                        </ion-grid>
-
-                        <div v-if="selectedMarkNo" class="allocation-panel">
-                            <h3 class="allocation-title">Allocate Quantity</h3>
-                            <ion-grid>
-                                <ion-row>
-                                    <ion-col size="12" size-md="5">
-                                        <ion-item>
-                                            <ion-label position="stacked">Contractor</ion-label>
-                                            <ion-select v-model="selectedContractorId" placeholder="Select Contractor"
-                                                :disabled="allocationLoading.contractors || contractors.length === 0">
-                                                <ion-select-option v-for="contractor in contractors"
-                                                    :key="contractor.id" :value="contractor.id">
-                                                    {{ contractor.name }}
-                                                </ion-select-option>
-                                            </ion-select>
-                                        </ion-item>
-                                    </ion-col>
-                                    <ion-col size="12" size-md="3">
-                                        <ion-item>
-                                            <ion-label position="stacked">Allocated Qty</ion-label>
-                                            <ion-input :value="selectedContractorAllocatedQty" readonly />
-                                        </ion-item>
-                                    </ion-col>
-                                    <ion-col size="12" size-md="3">
-                                        <ion-item>
-                                            <ion-label position="stacked">Process Qty</ion-label>
-                                            <ion-input v-model.number="processQuantity" type="number" min="1"
-                                                placeholder="Enter process qty" />
-                                        </ion-item>
-                                    </ion-col>
-                                    <ion-col size="12" size-md="1" class="d-flex align-items-end">
-                                        <ion-button expand="block" color="success" @click="addProcessRecord"
-                                            :disabled="!canAddProcessRecord || processRecordLoading">
-                                            Add
-                                        </ion-button>
-                                    </ion-col>
-                                </ion-row>
-                            </ion-grid>
-
-                            <div v-if="allocationError" class="allocation-error">{{ allocationError }}</div>
-                            <div class="allocation-summary">
-                                Remaining for contractor: <strong>{{ contractorRemainingQty }}</strong>
+                <div v-if="selectedMarkNo && processRecords.length > 0" class="allocation-panel mt-2">
+                    <h3 class="allocation-title">Process Records</h3>
+                    <div v-for="record in processRecords" :key="`record-${record.id}`" class="process-list-row">
+                        <div>
+                            <strong>{{ record.contractor?.name || '-' }}</strong>
+                            <div class="small-muted">
+                                Allocated: {{ record.allocated_quantity || 0 }}
+                                | Process Qty: {{ record.process_quantity || 0 }}
+                                | Status: {{ record.status }}
                             </div>
                         </div>
+                        <ion-button size="small" fill="outline" :disabled="record.status !== 'pending'"
+                            @click="openProcessRecord(record)">
+                            {{ record.status === 'pending' ? 'Open' : 'Done' }}
+                        </ion-button>
+                    </div>
+                </div>
 
-                        <div v-if="selectedMarkNo && processRecords.length > 0" class="allocation-panel mt-2">
-                            <h3 class="allocation-title">Process Records</h3>
-                            <div v-for="record in processRecords" :key="`record-${record.id}`" class="process-list-row">
-                                <div>
-                                    <strong>{{ record.contractor?.name || '-' }}</strong>
-                                    <div class="small-muted">
-                                        Mark No: {{ record.mark_no || selectedMarkNo || '-' }}
-                                        |
-                                        Allocated: {{ record.allocated_quantity || 0 }}
-                                        | Process Qty: {{ record.process_quantity || 0 }}
-                                        | Status: {{ record.status }}
-                                    </div>
-                                </div>
-                                <ion-button size="small" fill="outline" :disabled="record.status !== 'pending'"
-                                    @click="openProcessRecord(record)">
-                                    {{ record.status === 'pending' ? 'Open' : 'Done' }}
-                                </ion-button>
-                            </div>
-                        </div>
+                <!-- <ion-button expand="block" @click="handleMarkSelection"
+                    :disabled="!allSelectionsComplete || selectionLoading.stages" class="mark-button">
+                    {{ selectionLoading.stages ? 'Loading Stages...' : 'Show Selected Record Stages' }}
+                </ion-button> -->
 
-                        <!-- <ion-button expand="block" @click="handleMarkSelection"
-                            :disabled="!allSelectionsComplete || selectionLoading.stages" class="mark-button">
-                            {{ selectionLoading.stages ? 'Loading Stages...' : 'Show Selected Record Stages' }}
-                        </ion-button> -->
-                    </ion-card-content>
-                </ion-card>
 
                 <!-- Tabbed Interface: Stages / Final Inspection -->
-                <div v-if="stages.length > 0" class="stages-section">
-                    <ion-segment v-model="activeTab" class="mb-3">
-                        <ion-segment-button value="stages">
-                            <ion-label>Stages</ion-label>
-                        </ion-segment-button>
-                        <!-- <ion-segment-button value="inspection">
-                            <ion-label>Final Inspection</ion-label>
-                        </ion-segment-button> -->
-                    </ion-segment>
+                <div v-if="stages.length > 0" class="allocation-panel">
+                   
 
                     <div v-if="activeTab === 'stages'">
-                        <h2>Production Stages <span v-if="currentStageMarkNo" class="section-mark-no">| Mark No: {{ currentStageMarkNo }}</span></h2>
+                        <h2 class="allocation-title">Production Stages</h2>
                         <StageItem v-for="stage in stages" :key="stage.id" :stage="stage" @updateStage="updateStage" />
                         <div v-if="stages.length > 0" class="save-btn-wrapper">
                             <ion-button expand="block" color="success" @click="saveStages">
@@ -342,15 +327,6 @@ const canAddProcessRecord = computed(() => {
         && Number(processQuantity.value || 0) <= Number(contractorRemainingQty.value || 0);
 });
 
-const currentStageMarkNo = computed(() => {
-    if (selectedProcessRecordId.value) {
-        const currentRecord = processRecords.value.find((r) => Number(r.id) === Number(selectedProcessRecordId.value));
-        return currentRecord?.mark_no || selectedMarkNo.value || '';
-    }
-
-    return selectedMarkNo.value || '';
-});
-
 // Fetch Clients from API
 const loadClients = async () => {
     selectionLoading.clients = true;
@@ -421,9 +397,7 @@ const loadStages = async () => {
     selectionLoading.stages = true;
     try {
         const res = await api.get(`/getStages?planning_id=${selectedPlanning.value}&mark_no=${selectedMarkNo.value}`);
-        const rawStages = Array.isArray(res.data) ? res.data : [];
-        // Only show production stages (exclude inspection rows)
-        stages.value = rawStages.filter((el) => el?.type !== 'inspection');
+        stages.value = res.data;
 
         // Map stages with completed and rejected status
         stages.value = stages.value.map(el => ({
@@ -553,8 +527,7 @@ const openProcessRecord = async (record) => {
     try {
         const res = await api.get(`process-records/${record.id}/stages`);
         const rows = Array.isArray(res.data?.stages) ? res.data.stages : [];
-        const stageRows = rows.filter((el) => el?.type !== 'inspection');
-        stages.value = stageRows.map((el) => ({
+        stages.value = rows.map((el) => ({
             ...el,
             completed: el.stage_completed_date !== null,
             rejected: el.stage_rejected_date !== null,
@@ -779,11 +752,11 @@ ion-content {
     --padding-top: 20px;
 }
 
-.production-container {
+/* .production-container {
     max-width: 896px;
     margin: 0 auto;
     padding-top: 16px;
-}
+} */
 
 h1 {
     font-size: 30px;
@@ -812,12 +785,6 @@ h2 {
     font-weight: 600;
     color: #1f2937;
     margin: 24px 0 16px;
-}
-
-.section-mark-no {
-    font-size: 16px;
-    font-weight: 500;
-    color: #6b7280;
 }
 
 ion-card {
@@ -865,7 +832,7 @@ ion-card {
     border: 1px solid #e5e7eb;
     border-radius: 10px;
     padding: 14px 12px 10px;
-    background: #fafafa;
+    background: #ffffff;
 }
 
 .allocation-title {
@@ -873,12 +840,14 @@ ion-card {
     font-weight: 600;
     color: #111827;
     margin: 0 0 8px;
+    text-align: center;
 }
 
 .allocation-summary {
     margin-top: 8px;
     color: #374151;
     font-size: 14px;
+    text-align: center;
 }
 
 .allocation-error {

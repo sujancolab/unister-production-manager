@@ -27,7 +27,7 @@
             Production Process
           </ion-label>
         </ion-item>
-        <ion-item 
+        <!-- <ion-item 
           button 
           @click="navigateToFinalInspection"
           class="menu-item"
@@ -40,7 +40,7 @@
           <ion-label>
             Final Inspection
           </ion-label>
-        </ion-item>
+        </ion-item> -->
         <ion-item 
           button 
           @click="navigateToPackingList"

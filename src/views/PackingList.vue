@@ -1,142 +1,132 @@
 <template>
     <ion-page>
-        <Header />
+        <Header :showBack="true" />
 
         <ion-content class="ion-padding" :fullscreen="true">
-            <ion-header collapse="condense">
+            <!-- <ion-header collapse="condense">
                 <ion-toolbar>
                     <ion-title size="large">Packing List</ion-title>
                 </ion-toolbar>
-            </ion-header>
+            </ion-header> -->
 
             <div class="production-container">
-                <div class="page-header">
+                <!-- <div class="page-header">
                     <ion-button fill="clear" color="medium" @click="goToDashboard" class="back-button">
                         <ion-icon slot="start" :icon="arrowBack"></ion-icon>
                         Back to Dashboard
                     </ion-button>
                     <h1>Packing List</h1>
-                </div>
+                </div> -->
 
-                <ion-card>
-                    <ion-card-header>
-                        <ion-card-title>Shipment Details</ion-card-title>
-                    </ion-card-header>
-                    <ion-card-content>
+                <div class="allocation-panel">
+                    <h3 class="allocation-title">Packing List</h3>
+                    <ion-grid>
+                        <ion-row>
+                            <ion-col size="12" size-md="6">
+                                <ion-item>
+                                    <ion-label position="stacked">Client</ion-label>
+                                    <ion-select v-model="form.client_id" placeholder="Select Client"
+                                        :disabled="selectionLoading.formData">
+                                        <ion-select-option v-for="client in clients" :key="client.id" :value="client.id">
+                                            {{ client.name }}
+                                        </ion-select-option>
+                                    </ion-select>
+                                </ion-item>
+                                <div v-if="selectionLoading.formData" class="select-loader">
+                                    <ion-spinner name="crescent" />
+                                    <span>Loading clients and transporters...</span>
+                                </div>
+                            </ion-col>
+                            <ion-col size="12" size-md="6">
+                                <ion-item>
+                                    <ion-label position="stacked">Project</ion-label>
+                                    <ion-select v-model="form.project_id" placeholder="Select Project"
+                                        :disabled="selectionLoading.projects || !projects.length || !form.client_id">
+                                        <ion-select-option v-for="project in projects" :key="project.id" :value="project.id">
+                                            {{ project.project_id }} - {{ project.description }}
+                                        </ion-select-option>
+                                    </ion-select>
+                                </ion-item>
+                                <div v-if="selectionLoading.projects" class="select-loader">
+                                    <ion-spinner name="crescent" />
+                                    <span>Loading projects...</span>
+                                </div>
+                            </ion-col>
+                            <ion-col size="12" size-md="6">
+                                <ion-item>
+                                    <ion-label position="stacked">Transporter</ion-label>
+                                    <ion-select v-model="form.transporter_id" placeholder="Select Transporter"
+                                        :disabled="selectionLoading.formData">
+                                        <ion-select-option v-for="transporter in transporters" :key="transporter.id" :value="transporter.id">
+                                            {{ transporter.name }}
+                                        </ion-select-option>
+                                    </ion-select>
+                                </ion-item>
+                            </ion-col>
+                            <ion-col size="12" size-md="6">
+                                <ion-item>
+                                    <ion-label position="stacked">Vehicle Number</ion-label>
+                                    <ion-input v-model="form.vehicle_number" placeholder="Enter Vehicle No"></ion-input>
+                                </ion-item>
+                            </ion-col>
+                            <ion-col size="12" size-md="6">
+                                <ion-item>
+                                    <ion-label position="stacked">Truck Tare Weight (kg)</ion-label>
+                                    <ion-input type="number" v-model="form.truck_tare_weight" placeholder="0.00"></ion-input>
+                                </ion-item>
+                            </ion-col>
+                        </ion-row>
+                    </ion-grid>
+                </div>
+                    
+
+                <div class="allocation-panel">
+                    <h3 class="allocation-title">Items</h3>
+                    <div class="add-item-section">
                         <ion-grid>
-                            <ion-row>
-                                <ion-col size="12" size-md="6">
+                            <ion-row class="ion-align-items-end">
+                                <ion-col size="12" size-md="5">
                                     <ion-item>
-                                        <ion-label position="stacked">Client</ion-label>
-                                        <ion-select v-model="form.client_id" placeholder="Select Client"
-                                            :disabled="selectionLoading.formData">
-                                            <ion-select-option v-for="client in clients" :key="client.id" :value="client.id">
-                                                {{ client.name }}
-                                            </ion-select-option>
-                                        </ion-select>
-                                    </ion-item>
-                                    <div v-if="selectionLoading.formData" class="select-loader">
-                                        <ion-spinner name="crescent" />
-                                        <span>Loading clients and transporters...</span>
-                                    </div>
-                                </ion-col>
-                                <ion-col size="12" size-md="6">
-                                    <ion-item>
-                                        <ion-label position="stacked">Project</ion-label>
-                                        <ion-select v-model="form.project_id" placeholder="Select Project"
-                                            :disabled="selectionLoading.projects || !projects.length || !form.client_id">
-                                            <ion-select-option v-for="project in projects" :key="project.id" :value="project.id">
-                                                {{ project.project_id }} - {{ project.description }}
-                                            </ion-select-option>
-                                        </ion-select>
-                                    </ion-item>
-                                    <div v-if="selectionLoading.projects" class="select-loader">
-                                        <ion-spinner name="crescent" />
-                                        <span>Loading projects...</span>
-                                    </div>
-                                </ion-col>
-                                <ion-col size="12" size-md="6">
-                                    <ion-item>
-                                        <ion-label position="stacked">Transporter</ion-label>
-                                        <ion-select v-model="form.transporter_id" placeholder="Select Transporter"
-                                            :disabled="selectionLoading.formData">
-                                            <ion-select-option v-for="transporter in transporters" :key="transporter.id" :value="transporter.id">
-                                                {{ transporter.name }}
-                                            </ion-select-option>
-                                        </ion-select>
+                                        <ion-label position="stacked">Mark No</ion-label>
+                                        <ion-input v-model="currentItem.mark_no" placeholder="Scan or Enter Mark No"></ion-input>
+                                        <ion-button slot="end" fill="clear" @click="scanQR">
+                                            <ion-icon slot="icon-only" :icon="qrCodeOutline"></ion-icon>
+                                        </ion-button>
                                     </ion-item>
                                 </ion-col>
-                                <ion-col size="12" size-md="6">
+                                <ion-col size="6" size-md="3">
                                     <ion-item>
-                                        <ion-label position="stacked">Vehicle Number</ion-label>
-                                        <ion-input v-model="form.vehicle_number" placeholder="Enter Vehicle No"></ion-input>
+                                        <ion-label position="stacked">Quantity</ion-label>
+                                        <ion-input type="number" v-model="currentItem.quantity" min="1"></ion-input>
                                     </ion-item>
                                 </ion-col>
-                                <ion-col size="12" size-md="6">
-                                    <ion-item>
-                                        <ion-label position="stacked">Truck Tare Weight (kg)</ion-label>
-                                        <ion-input type="number" v-model="form.truck_tare_weight" placeholder="0.00"></ion-input>
-                                    </ion-item>
+                                <ion-col size="6" size-md="4">
+                                    <ion-button expand="block" @click="addItem" :disabled="!currentItem.mark_no">
+                                        Add Item
+                                    </ion-button>
                                 </ion-col>
                             </ion-row>
                         </ion-grid>
-                    </ion-card-content>
-                </ion-card>
+                    </div>
 
-                <ion-card>
-                    <ion-card-header>
-                        <ion-card-title>Items</ion-card-title>
-                    </ion-card-header>
-                    <ion-card-content>
-                        <div class="add-item-section">
-                            <ion-grid>
-                                <ion-row class="ion-align-items-end">
-                                    <ion-col size="12" size-md="5">
-                                        <ion-item>
-                                            <ion-label position="stacked">Mark No</ion-label>
-                                            <ion-input v-model="currentItem.mark_no" placeholder="Scan or Enter Mark No"></ion-input>
-                                            <ion-button slot="end" fill="clear" @click="scanQR">
-                                                <ion-icon slot="icon-only" :icon="qrCodeOutline"></ion-icon>
-                                            </ion-button>
-                                        </ion-item>
-                                    </ion-col>
-                                    <ion-col size="6" size-md="3">
-                                        <ion-item>
-                                            <ion-label position="stacked">Quantity</ion-label>
-                                            <ion-input type="number" v-model="currentItem.quantity" min="1"></ion-input>
-                                        </ion-item>
-                                    </ion-col>
-                                    <ion-col size="6" size-md="4">
-                                        <ion-button expand="block" @click="addItem" :disabled="!currentItem.mark_no">
-                                            Add Item
-                                        </ion-button>
-                                    </ion-col>
-                                </ion-row>
-                            </ion-grid>
-                        </div>
+                    <ion-list v-if="form.items.length > 0">
+                        <ion-item v-for="(item, index) in form.items" :key="index">
+                            <ion-label>
+                                <h2>{{ item.mark_no }}</h2>
+                                <p>Qty: {{ item.quantity }}</p>
+                            </ion-label>
+                            <ion-button slot="end" fill="clear" color="danger" @click="removeItem(index)">
+                                <ion-icon slot="icon-only" :icon="trashOutline"></ion-icon>
+                            </ion-button>
+                        </ion-item>
+                    </ion-list>
+                    <div v-else class="ion-text-center ion-padding">
+                        <p class="text-medium">No items added yet.</p>
+                    </div>
+                </div>
 
-                        <ion-list v-if="form.items.length > 0">
-                            <ion-item v-for="(item, index) in form.items" :key="index">
-                                <ion-label>
-                                    <h2>{{ item.mark_no }}</h2>
-                                    <p>Qty: {{ item.quantity }}</p>
-                                </ion-label>
-                                <ion-button slot="end" fill="clear" color="danger" @click="removeItem(index)">
-                                    <ion-icon slot="icon-only" :icon="trashOutline"></ion-icon>
-                                </ion-button>
-                            </ion-item>
-                        </ion-list>
-                        <div v-else class="ion-text-center ion-padding">
-                            <p class="text-medium">No items added yet.</p>
-                        </div>
-                    </ion-card-content>
-                </ion-card>
-
-                <ion-card>
-                    <ion-card-header>
-                        <ion-card-title>Weight Details</ion-card-title>
-                    </ion-card-header>
-                    <ion-card-content>
+                    <div class="allocation-panel">
+                        <h3 class="allocation-title">Weight Details</h3>
                         <ion-grid>
                             <ion-row>
                                 <ion-col size="12" size-md="6">
@@ -156,8 +146,7 @@
                         <ion-button expand="block" class="ion-margin-top" @click="submitForm" :disabled="isSubmitting">
                             {{ isSubmitting ? 'Saving...' : 'Save Packing List' }}
                         </ion-button>
-                    </ion-card-content>
-                </ion-card>
+                    </div>
             </div>
         </ion-content>
 
@@ -339,11 +328,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.production-container {
+/* .production-container {
     max-width: 896px;
     margin: 0 auto;
     padding-top: 16px;
-}
+} */
 .page-header { margin-bottom: 24px; }
 .back-button { margin-bottom: 12px; font-weight: 600; --padding-start: 0; }
 .text-medium { color: #666; }
@@ -356,4 +345,20 @@ onMounted(() => {
     color: #6b7280;
     font-size: 13px;
 }
+.allocation-panel {
+    margin-top: 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 14px 12px 10px;
+    background: #ffffff;
+}
+
+.allocation-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 8px;
+    text-align: center;
+}
+
 </style>

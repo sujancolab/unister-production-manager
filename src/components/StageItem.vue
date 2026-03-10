@@ -3,7 +3,8 @@
         <ion-card-content>
             <div class="stage-header">
                 <div class="stage-info">
-                    <h3>{{ stage.stage_name || stage.stage }}</h3>
+                    <h3>{{ formatStageName(stage.stage_name || stage.stage) }}</h3>
+
                     <ion-badge :color="statusBadgeColor" class="status-badge">
                         {{ statusText }}
                     </ion-badge>
@@ -335,13 +336,22 @@ const formatDate = (dateString: string | null) => {
         minute: '2-digit'
     });
 };
+
+const formatStageName = (name: string) => {
+  if (!name) return ''
+
+  return name
+    .replace(/_/g, ' ')                 // replace _ with space
+    .toLowerCase()
+    .replace(/\b\w/g, char => char.toUpperCase()) // capitalize words
+}
 </script>
 
 <style scoped>
 .stage-card {
-    margin-bottom: 16px;
     border-left: 4px solid;
     transition: all 0.3s ease;
+    margin: 0 0 16px 0;
 }
 
 .stage-pending {
@@ -367,19 +377,19 @@ const formatDate = (dateString: string | null) => {
 }
 
 .stage-info {
-    flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
 .stage-info h3 {
-    margin: 0 0 8px 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #1f2937;
+  margin: 0;
+  font-size: 18px;
 }
 
 .status-badge {
-    font-size: 12px;
-    padding: 4px 12px;
+  font-size: 12px;
 }
 
 .stage-actions {
