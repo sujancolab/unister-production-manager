@@ -3,26 +3,26 @@
         <Header />
 
         <ion-content class="ion-padding" :fullscreen="true">
-            <ion-header collapse="condense">
+            <!-- <ion-header collapse="condense">
                 <ion-toolbar>
                     <ion-title size="large">Packing List</ion-title>
                 </ion-toolbar>
-            </ion-header>
+            </ion-header> -->
 
-            <div class="production-container">
-                <div class="page-header">
+            <div>
+                <!-- <div class="page-header">
                     <ion-button fill="clear" color="medium" @click="goToDashboard" class="back-button">
                         <ion-icon slot="start" :icon="arrowBack"></ion-icon>
                         Back to Dashboard
                     </ion-button>
                     <h1>Packing List</h1>
-                </div>
+                </div> -->
 
                 <ion-card>
-                    <ion-card-header>
+                    <ion-card-header style="border-bottom: 1px solid lightgray;">
                         <ion-card-title>Shipment Details</ion-card-title>
                     </ion-card-header>
-                    <ion-card-content>
+                    <ion-card-content style="padding:0;">
                         <ion-grid>
                             <ion-row>
                                 <ion-col size="12" size-md="6">
@@ -84,10 +84,10 @@
                 </ion-card>
 
                 <ion-card>
-                    <ion-card-header>
+                    <ion-card-header style="border-bottom: 1px solid lightgray;">
                         <ion-card-title>Items</ion-card-title>
                     </ion-card-header>
-                    <ion-card-content>
+                    <ion-card-content style="padding: 0;">
                         <div class="add-item-section">
                             <ion-grid>
                                 <ion-row class="ion-align-items-end">
@@ -133,10 +133,10 @@
                 </ion-card>
 
                 <ion-card>
-                    <ion-card-header>
+                    <ion-card-header style="border-bottom: 1px solid lightgray;">
                         <ion-card-title>Weight Details</ion-card-title>
                     </ion-card-header>
-                    <ion-card-content>
+                    <ion-card-content style="padding: 0;">
                         <ion-grid>
                             <ion-row>
                                 <ion-col size="12" size-md="6">
@@ -355,5 +355,10 @@ onMounted(() => {
     padding: 4px 8px 0;
     color: #6b7280;
     font-size: 13px;
+}
+
+ion-card {
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+    margin-bottom: 24px;
 }
 </style>

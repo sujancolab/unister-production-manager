@@ -1,18 +1,17 @@
 <template>
     <ion-page>
-        <ion-content class="ion-padding">
+        <ion-content>
             <div class="login-container">
                 <ion-card class="login-card">
                     <ion-card-content>
                         <div class="logo-section">
-                            <div class="logo-circle-large">P</div>
                             <h1>Production Manager</h1>
                             <p>Sign in to continue</p>
                         </div>
 
                         <ion-list>
                             <ion-item>
-                                <ion-label position="stacked">Source</ion-label>
+                                <ion-label position="stacked">Site</ion-label>
                                 <ion-select v-model="selectedSource" interface="popover" placeholder="Select source">
                                     <ion-select-option value="amta">Amta</ion-select-option>
                                     <ion-select-option value="deora">Deora</ion-select-option>
@@ -36,11 +35,11 @@
                             Login
                         </ion-button>
 
-                        <p class="source-url">
+                        <!-- <p class="source-url">
                             API: {{ selectedSource === 'amta'
                                 ? 'https://amta-production.tech-trico.com/api'
                                 : 'https://deora-production.tech-trico.com/api' }}
-                        </p>
+                        </p> -->
                     </ion-card-content>
                 </ion-card>
             </div>

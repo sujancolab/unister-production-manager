@@ -7,8 +7,7 @@
 
       <ion-title>
         <div class="logo-container">
-          <div class="logo-circle">P</div>
-          <span class="company-name">{{ companyName }}</span>
+          <div>{{ companyName }}</div>
         </div>
       </ion-title>
 
