@@ -301,6 +301,12 @@ const stages = ref([]);
 const contractors = ref([]);
 const markStagesForAllocation = ref([]);
 const allocations = ref([]);
+const contractorAllocationSummary = ref({
+    allocated: 0,
+    processed: 0,
+    loaded: false,
+    error: ''
+});
 
 const selectedClient = ref('');
 const selectedProject = ref('');
@@ -339,6 +345,9 @@ const allocationStage = computed(() => {
 });
 
 const selectedContractorAllocatedQty = computed(() => {
+    if (contractorAllocationSummary.value.loaded) {
+        return Number(contractorAllocationSummary.value.allocated || 0);
+    }
     if (!selectedContractorId.value) return 0;
     return allocations.value
         .filter((a) => Number(a?.contractor_id) === Number(selectedContractorId.value))
@@ -346,6 +355,9 @@ const selectedContractorAllocatedQty = computed(() => {
 });
 
 const contractorProcessedQty = computed(() => {
+    if (contractorAllocationSummary.value.loaded) {
+        return Number(contractorAllocationSummary.value.processed || 0);
+    }
     if (!selectedContractorId.value) return 0;
     return processRecords.value
         .filter((r) => Number(r?.contractor_id) === Number(selectedContractorId.value))
@@ -472,6 +484,12 @@ const loadAllocationContext = async () => {
     allocationTotalAllocated.value = 0;
     allocationRemaining.value = 0;
     selectedContractorId.value = null;
+    contractorAllocationSummary.value = {
+        allocated: 0,
+        processed: 0,
+        loaded: false,
+        error: ''
+    };
 
     if (!selectedPlanning.value || !selectedMarkNo.value) {
         markStagesForAllocation.value = [];
@@ -517,6 +535,42 @@ const loadAllocationContext = async () => {
         allocationError.value = 'Unable to load allocation data for selected mark.';
     } finally {
         allocationLoading.allocations = false;
+    }
+};
+
+const loadContractorAllocationSummary = async () => {
+    if (!selectedPlanning.value || !selectedMarkNo.value || !selectedContractorId.value) {
+        contractorAllocationSummary.value = {
+            allocated: 0,
+            processed: 0,
+            loaded: false,
+            error: ''
+        };
+        return;
+    }
+
+    try {
+        const res = await api.get('/contractor-allocation-summary', {
+            params: {
+                planning_id: selectedPlanning.value,
+                mark_no: selectedMarkNo.value,
+                contractor_id: selectedContractorId.value
+            }
+        });
+        contractorAllocationSummary.value = {
+            allocated: Number(res.data?.allocated_quantity || 0),
+            processed: Number(res.data?.processed_quantity || 0),
+            loaded: true,
+            error: ''
+        };
+    } catch (error) {
+        console.error('Error loading contractor allocation summary:', error);
+        contractorAllocationSummary.value = {
+            allocated: 0,
+            processed: 0,
+            loaded: false,
+            error: 'Unable to load contractor allocation summary.'
+        };
     }
 };
 
@@ -785,6 +839,10 @@ watch(selectedMarkNo, () => {
     stages.value = [];
     loadAllocationContext();
     loadProcessRecords();
+});
+
+watch([selectedPlanning, selectedMarkNo, selectedContractorId], () => {
+    loadContractorAllocationSummary();
 });
 
 // Load Clients on Page Load
