@@ -27,6 +27,20 @@
             Production Process
           </ion-label>
         </ion-item>
+        <ion-item
+          button
+          @click="navigateToPainting"
+          class="menu-item"
+          detail
+        >
+          <ion-icon
+            :icon="paintIcon"
+            slot="start"
+          ></ion-icon>
+          <ion-label>
+            Painting Process
+          </ion-label>
+        </ion-item>
         <!-- <ion-item 
           button 
           @click="navigateToFinalInspection"
@@ -59,7 +73,7 @@
 
 <script setup>
 import { IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonLabel, IonIcon, menuController } from '@ionic/vue';
-import { business, clipboard, cube } from 'ionicons/icons';
+import { business, clipboard, cube, colorPalette } from 'ionicons/icons';
 import { useAppStore } from '../store';
 import { useRouter } from 'vue-router';
 
@@ -69,6 +83,7 @@ const router = useRouter();
 const businessIcon = business;
 const clipboardIcon = clipboard;
 const cubeIcon = cube;
+const paintIcon = colorPalette;
 
 const navigateToProduction = async () => {
   router.push('/production');
@@ -77,6 +92,11 @@ const navigateToProduction = async () => {
 
 const navigateToFinalInspection = async () => {
   router.push('/final-inspections');
+  await menuController.close();
+};
+
+const navigateToPainting = async () => {
+  router.push('/painting');
   await menuController.close();
 };
 
