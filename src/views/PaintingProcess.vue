@@ -166,6 +166,9 @@
                         <div class="allocation-summary">
                             Remaining for contractor: <strong>{{ contractorRemainingQty }}</strong>
                         </div>
+                        <div class="allocation-summary">
+                            Production Processed Qty: <strong>{{ productionProcessedQty }}</strong>
+                        </div>
                     </ion-card-content>
                 </ion-card>
 
@@ -443,6 +446,13 @@ const contractorProcessedQty = computed(() => {
     if (!selectedContractorId.value) return 0;
     return processRecords.value
         .filter((r) => Number(r?.contractor_id) === Number(selectedContractorId.value))
+        .filter((r) => String(r?.status || '').toLowerCase() === 'completed')
+        .reduce((sum, r) => sum + Number(r?.process_quantity || 0), 0);
+});
+
+const productionProcessedQty = computed(() => {
+    return processRecords.value
+        .filter((r) => String(r?.status || '').toLowerCase() === 'completed')
         .reduce((sum, r) => sum + Number(r?.process_quantity || 0), 0);
 });
 
