@@ -255,7 +255,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, reactive } from 'vue';
+import { ref, computed, watch, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import {
     IonPage,
@@ -279,7 +279,8 @@ import {
     IonSegment,
     IonSegmentButton,
     IonSpinner,
-    IonInput
+    IonInput,
+    onIonViewWillEnter
 } from '@ionic/vue';
 import { arrowBack } from 'ionicons/icons';
 import Header from '../components/Header.vue';
@@ -338,6 +339,40 @@ const allocationLoading = reactive({
 
 const activeTab = ref('stages');
 const finalInspection = ref(null);
+
+const resetFormState = () => {
+    selectedClient.value = '';
+    selectedProject.value = '';
+    selectedBOM.value = '';
+    selectedPlanning.value = '';
+    selectedMarkNo.value = '';
+    selectedContractorId.value = null;
+    processQuantity.value = null;
+    selectedProcessRecordId.value = null;
+
+    projects.value = [];
+    boms.value = [];
+    plannings.value = [];
+    planningMarkNos.value = [];
+    stages.value = [];
+    contractors.value = [];
+    markStagesForAllocation.value = [];
+    allocations.value = [];
+    processRecords.value = [];
+
+    allocationTotalMarkQuantity.value = 0;
+    allocationTotalAllocated.value = 0;
+    allocationRemaining.value = 0;
+    allocationError.value = '';
+    contractorAllocationSummary.value = {
+        allocated: 0,
+        processed: 0,
+        loaded: false,
+        error: ''
+    };
+    activeTab.value = 'stages';
+    finalInspection.value = null;
+};
 
 const allocationStage = computed(() => {
     const source = markStagesForAllocation.value.length ? markStagesForAllocation.value : stages.value;
@@ -845,8 +880,8 @@ watch([selectedPlanning, selectedMarkNo, selectedContractorId], () => {
     loadContractorAllocationSummary();
 });
 
-// Load Clients on Page Load
-onMounted(() => {
+onIonViewWillEnter(() => {
+    resetFormState();
     loadClients();
     fetchFinalInspection();
 });
