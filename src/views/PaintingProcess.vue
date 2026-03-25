@@ -214,7 +214,14 @@
                         </ion-card-header>
                         <ion-card-content style="padding: 0;">
                             <div v-if="activeTab === 'stages'">
-                                
+                                <div v-if="stages.length > 0" class="process-summary">
+                                    <strong>Process Qty:</strong> {{ stages[0]?.process_quantity ?? 0 }}
+                                    |
+                                    <strong>Completed Qty:</strong> {{
+                                        stages.reduce((sum, s) => sum + (s.process_quantity_completed ?? 0), 0)
+                                    }}
+                                </div>
+
                                 <StageItem v-for="stage in stages" :key="stage.id" :stage="stage" @updateStage="updateStage" />
                                 <div v-if="stages.length > 0" class="save-btn-wrapper">
                                     <ion-button expand="block" color="success" @click="saveStages">
