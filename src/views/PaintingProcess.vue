@@ -150,6 +150,7 @@
                                     <ion-item>
                                 <ion-label position="stacked">Process Qty</ion-label>
                                         <ion-input v-model.number="processQuantity" type="number" min="1"
+                                            :max="contractorRemainingQty || undefined"
                                             placeholder="Enter process qty" />
                                     </ion-item>
                                 </ion-col>
@@ -315,6 +316,9 @@ const allocations = ref([]);
 const contractorAllocationSummary = ref({
     allocated: 0,
     processed: 0,
+    productionProcessed: 0,
+    paintingProcessed: 0,
+    remaining: 0,
     loaded: false,
     error: ''
 });
@@ -377,6 +381,9 @@ const resetFormState = () => {
     contractorAllocationSummary.value = {
         allocated: 0,
         processed: 0,
+        productionProcessed: 0,
+        paintingProcessed: 0,
+        remaining: 0,
         loaded: false,
         error: ''
     };
@@ -441,7 +448,11 @@ const selectedContractorAllocatedQty = computed(() => {
 
 const contractorProcessedQty = computed(() => {
     if (contractorAllocationSummary.value.loaded) {
-        return Number(contractorAllocationSummary.value.processed || 0);
+        const summary = contractorAllocationSummary.value;
+        if (summary.paintingProcessed !== undefined) {
+            return Number(summary.paintingProcessed || 0);
+        }
+        return Number(summary.processed || 0);
     }
     if (!selectedContractorId.value) return 0;
     return processRecords.value
@@ -451,13 +462,21 @@ const contractorProcessedQty = computed(() => {
 });
 
 const productionProcessedQty = computed(() => {
-    return processRecords.value
-        .filter((r) => String(r?.status || '').toLowerCase() === 'completed')
-        .reduce((sum, r) => sum + Number(r?.process_quantity || 0), 0);
+    if (contractorAllocationSummary.value.loaded) {
+        const summary = contractorAllocationSummary.value;
+        if (summary.productionProcessed !== undefined) {
+            return Number(summary.productionProcessed || 0);
+        }
+        return Number(summary.processed || 0);
+    }
+    return 0;
 });
 
 const contractorRemainingQty = computed(() => {
-    return Math.max(0, Number(selectedContractorAllocatedQty.value || 0) - Number(contractorProcessedQty.value || 0));
+    if (contractorAllocationSummary.value.loaded && contractorAllocationSummary.value.remaining !== undefined) {
+        return Math.max(0, Number(contractorAllocationSummary.value.remaining || 0));
+    }
+    return Math.max(0, Number(productionProcessedQty.value || 0) - Number(contractorProcessedQty.value || 0));
 });
 
 const canAddProcessRecord = computed(() => {
@@ -579,6 +598,9 @@ const loadAllocationContext = async () => {
     contractorAllocationSummary.value = {
         allocated: 0,
         processed: 0,
+        productionProcessed: 0,
+        paintingProcessed: 0,
+        remaining: 0,
         loaded: false,
         error: ''
     };
@@ -635,6 +657,9 @@ const loadContractorAllocationSummary = async () => {
         contractorAllocationSummary.value = {
             allocated: 0,
             processed: 0,
+            productionProcessed: 0,
+            paintingProcessed: 0,
+            remaining: 0,
             loaded: false,
             error: ''
         };
@@ -653,6 +678,11 @@ const loadContractorAllocationSummary = async () => {
         contractorAllocationSummary.value = {
             allocated: Number(res.data?.allocated_quantity || 0),
             processed: Number(res.data?.processed_quantity || 0),
+            productionProcessed: Number(res.data?.production_processed_quantity || 0),
+            paintingProcessed: Number(
+                res.data?.painting_processed_quantity ?? res.data?.processed_quantity ?? 0
+            ),
+            remaining: Number(res.data?.remaining_quantity || 0),
             loaded: true,
             error: ''
         };
@@ -661,6 +691,9 @@ const loadContractorAllocationSummary = async () => {
         contractorAllocationSummary.value = {
             allocated: 0,
             processed: 0,
+            productionProcessed: 0,
+            paintingProcessed: 0,
+            remaining: 0,
             loaded: false,
             error: 'Unable to load contractor allocation summary.'
         };
