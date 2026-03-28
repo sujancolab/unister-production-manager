@@ -24,7 +24,7 @@
                     <ion-card-header style="border-bottom: 1px solid lightgray;">
                         <ion-card-title>Painting Process</ion-card-title>
                     </ion-card-header>
-                    <ion-card-content  style="padding:0;">
+                    <ion-card-content style="padding:0;">
                         <ion-grid>
                             <ion-row>
                                 <ion-col size="12" size-md="6">
@@ -133,8 +133,8 @@
                                         <ion-label position="stacked">Contractor</ion-label>
                                         <ion-select v-model="selectedContractorId" placeholder="Select Contractor"
                                             :disabled="allocationLoading.contractors || contractors.length === 0">
-                                            <ion-select-option v-for="contractor in contractors"
-                                                :key="contractor.id" :value="contractor.id">
+                                            <ion-select-option v-for="contractor in contractors" :key="contractor.id"
+                                                :value="contractor.id">
                                                 {{ contractor.name }}
                                             </ion-select-option>
                                         </ion-select>
@@ -148,7 +148,7 @@
                                 </ion-col>
                                 <ion-col size="12" size-md="3">
                                     <ion-item>
-                                <ion-label position="stacked">Process Qty</ion-label>
+                                        <ion-label position="stacked">Process Qty</ion-label>
                                         <ion-input v-model.number="processQuantity" type="number" min="1"
                                             :max="contractorRemainingQty || undefined"
                                             placeholder="Enter process qty" />
@@ -165,11 +165,12 @@
 
                         <div v-if="allocationError" class="allocation-error">{{ allocationError }}</div>
                         <div class="allocation-summary">
-                            Remaining for contractor: <strong>{{ contractorRemainingQty }}</strong>
+                            Balance Painting Work Remaining: <strong>{{ contractorRemainingQty }}</strong>/<strong>{{
+                                productionProcessedQty }}</strong>
                         </div>
-                        <div class="allocation-summary">
+                        <!-- <div class="allocation-summary">
                             Production Processed Qty: <strong>{{ productionProcessedQty }}</strong>
-                        </div>
+                        </div> -->
                     </ion-card-content>
                 </ion-card>
 
@@ -190,8 +191,7 @@
                                         | Status: {{ record.status }}
                                     </div>
                                 </div>
-                                <ion-button size="small" fill="outline"
-                                    @click="openProcessRecord(record)">
+                                <ion-button size="small" fill="outline" @click="openProcessRecord(record)">
                                     View
                                 </ion-button>
                             </div>
@@ -213,7 +213,8 @@
                     <ion-card>
                         <ion-card-header style="border-bottom: 1px solid lightgray;">
                             <ion-card-title>
-                                Painting Stages <span v-if="currentStageMarkNo">| Mark No: {{ currentStageMarkNo }}</span>
+                                Painting Stages <span v-if="currentStageMarkNo">| Mark No: {{ currentStageMarkNo
+                                }}</span>
                             </ion-card-title>
                         </ion-card-header>
                         <ion-card-content style="padding: 0;">
@@ -226,7 +227,8 @@
                                     }}
                                 </div>
 
-                                <StageItem v-for="stage in stages" :key="stage.id" :stage="stage" @updateStage="updateStage" />
+                                <StageItem v-for="stage in stages" :key="stage.id" :stage="stage"
+                                    @updateStage="updateStage" />
                                 <div v-if="stages.length > 0" class="save-btn-wrapper">
                                     <ion-button expand="block" color="success" @click="saveStages">
                                         Save Stages
@@ -240,8 +242,9 @@
                                     <ion-card-content>
                                         <div v-if="finalInspection">
                                             <ion-label>
-                                                <strong>Status:</strong> <span :class="statusClass(finalInspection.status)">{{
-                                                    finalInspection.status }}</span><br>
+                                                <strong>Status:</strong> <span
+                                                    :class="statusClass(finalInspection.status)">{{
+                                                        finalInspection.status }}</span><br>
                                                 <strong>Mark No:</strong> {{ finalInspection.mark_no }}<br>
                                                 <strong>Created:</strong> {{ formatDate(finalInspection.created_at) }}
                                             </ion-label>
