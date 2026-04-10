@@ -17,7 +17,8 @@ export type ApiSourceKey = keyof typeof API_SOURCES;
 
 const DEFAULT_SOURCE: ApiSourceKey = "amta";
 
-const buildApiBaseUrl = (webBaseUrl: string) => `${webBaseUrl.replace(/\/+$/, "")}/api`;
+const buildApiBaseUrl = (webBaseUrl: string) =>
+  `${webBaseUrl.replace(/\/+$/, "")}/api`;
 
 export const getStoredApiSource = (): ApiSourceKey => {
   const storedSource = localStorage.getItem(API_SOURCE_STORAGE_KEY);

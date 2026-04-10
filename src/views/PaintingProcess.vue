@@ -63,9 +63,25 @@
 
                                 <ion-col size="12" size-md="6">
                                     <ion-item>
+                                        <ion-label position="stacked">Lot</ion-label>
+                                        <ion-select v-model="selectedLot" placeholder="Select Lot"
+                                            :disabled="selectionLoading.lots || !selectedProject">
+                                            <ion-select-option v-for="lot in lots" :key="lot.id" :value="lot.id">
+                                                {{ lot.lot_no || lot.lot_number || lot.name || lot.id }}
+                                            </ion-select-option>
+                                        </ion-select>
+                                    </ion-item>
+                                    <div v-if="selectionLoading.lots" class="select-loader">
+                                        <ion-spinner name="crescent" />
+                                        <span>Loading lots...</span>
+                                    </div>
+                                </ion-col>
+
+                                <ion-col size="12" size-md="6">
+                                    <ion-item>
                                         <ion-label position="stacked">BOM</ion-label>
                                         <ion-select v-model="selectedBOM" placeholder="Select BOM"
-                                            :disabled="selectionLoading.boms || !selectedProject">
+                                            :disabled="selectionLoading.boms || !selectedLot">
                                             <ion-select-option v-for="bom in boms" :key="bom" :value="bom.id">
                                                 {{ bom.bom_number }}
                                             </ion-select-option>
@@ -309,6 +325,7 @@ const router = useRouter();
 // Reactive data
 const clients = ref([]);
 const projects = ref(['Project Alpha', 'Project Beta', 'Project Gamma']);
+const lots = ref([]);
 const boms = ref(['BOM-001', 'BOM-002', 'BOM-003']);
 const plannings = ref(['Planning Q1', 'Planning Q2', 'Planning Q3']);
 const planningMarkNos = ref([]);
@@ -328,6 +345,7 @@ const contractorAllocationSummary = ref({
 
 const selectedClient = ref('');
 const selectedProject = ref('');
+const selectedLot = ref('');
 const selectedBOM = ref('');
 const selectedPlanning = ref('');
 const selectedMarkNo = ref('');
@@ -343,6 +361,7 @@ const allocationError = ref('');
 const selectionLoading = reactive({
     clients: false,
     projects: false,
+    lots: false,
     boms: false,
     plannings: false,
     markNos: false,
@@ -360,6 +379,7 @@ const finalInspection = ref(null);
 const resetFormState = () => {
     selectedClient.value = '';
     selectedProject.value = '';
+    selectedLot.value = '';
     selectedBOM.value = '';
     selectedPlanning.value = '';
     selectedMarkNo.value = '';
@@ -368,6 +388,7 @@ const resetFormState = () => {
     selectedProcessRecordId.value = null;
 
     projects.value = [];
+    lots.value = [];
     boms.value = [];
     plannings.value = [];
     planningMarkNos.value = [];
@@ -524,10 +545,23 @@ const loadProjects = async (clientId) => {
     }
 };
 
-const loadBoms = async (projectId) => {
+const loadLots = async (projectId) => {
+    selectionLoading.lots = true;
+    try {
+        const res = await api.get(`/get-project-lot-from-bom?project_id=${projectId}`);
+        lots.value = Array.isArray(res.data) ? res.data : [];
+    } catch (error) {
+        console.error("Error loading lots:", error);
+    } finally {
+        selectionLoading.lots = false;
+    }
+};
+
+const loadBoms = async (projectId, projectLotId) => {
     selectionLoading.boms = true;
     try {
-        const res = await api.get(`/getBoms?project_id=${projectId}`);
+        const lotParam = projectLotId ? `&project_lot_id=${projectLotId}` : '';
+        const res = await api.get(`/getBoms?project_id=${projectId}${lotParam}`);
         boms.value = [res.data];
         console.log("boms", boms.value);
     } catch (error) {
@@ -893,6 +927,7 @@ const saveStages = async () => {
 const allSelectionsComplete = computed(() => {
     return selectedClient.value &&
         selectedProject.value &&
+        selectedLot.value &&
         selectedBOM.value &&
         selectedPlanning.value &&
         selectedMarkNo.value;
@@ -935,16 +970,36 @@ watch(selectedMarkNo, fetchFinalInspection);
 watch(selectedClient, (newVal) => {
     if (newVal) {
         selectedProject.value = "";
+        selectedLot.value = "";
         projects.value = [];
+        lots.value = [];
         loadProjects(newVal);
     }
 });
 
 watch(selectedProject, (newVal) => {
     if (newVal) {
+        selectedLot.value = "";
         selectedBOM.value = "";
+        selectedPlanning.value = "";
+        selectedMarkNo.value = "";
+        lots.value = [];
         boms.value = [];
-        loadBoms(newVal);
+        plannings.value = [];
+        planningMarkNos.value = [];
+        loadLots(newVal);
+    }
+});
+
+watch(selectedLot, (newVal) => {
+    if (newVal) {
+        selectedBOM.value = "";
+        selectedPlanning.value = "";
+        selectedMarkNo.value = "";
+        boms.value = [];
+        plannings.value = [];
+        planningMarkNos.value = [];
+        loadBoms(selectedProject.value, newVal);
     }
 });
 
